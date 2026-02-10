@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { supabase } from '../services/supabaseClient';
+import { saveAttendance, createSession, getSessionHistory } from '../services/attendanceService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronRight, GraduationCap, BookOpen, ShieldCheck, Users, Calendar, FileText, Type, LogOut, Check, X, Camera, History, UserCheck, Fingerprint, QrCode as QrCodeIcon } from 'lucide-react';
 
@@ -129,14 +129,13 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
   const handleViewHistory = async () => {
     if (!selectedCourse) return;
     setStep(LecturerStep.HISTORY);
-    
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('course_id', selectedCourse.id)
-      .order('created_at', { ascending: false });
-    
-    if (data) setHistorySessions(data);
+    try {
+      const data = await getSessionHistory(selectedCourse.id);
+      setHistorySessions(data);
+    } catch (err) {
+      console.warn('Failed to load session history', err);
+      setHistorySessions([]);
+    }
   };
 
   const handleCreateSessionSubmit = async (e: React.FormEvent) => {
@@ -148,7 +147,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
 
     // Persist session metadata
     try {
-      await supabase.from('sessions').insert({
+      await createSession({
         session_id: newSessionId,
         course_id: selectedCourse.id,
         name: sessionName,
@@ -197,23 +196,12 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       studentId: studentId,
       timestamp: new Date().toISOString()
     };
-
-    const { error } = await supabase
-      .from('attendance_logs')
-      .insert([
-        {
-          class_id: activeSessionId,
-          student_id: studentId,
-          nonce: `BIO-${Date.now()}`,
-          timestamp: attendanceRecord.timestamp
-        }
-      ]);
-
-    if (!error) {
+    try {
+      await saveAttendance(activeSessionId, studentId, undefined, `BIO-${Date.now()}`);
       setAttendanceRecords(prev => [attendanceRecord, ...prev]);
       setLastBioScannedStudent(studentId);
       setScannerInput('');
-    } else {
+    } catch (err) {
       alert("Error logging attendance or already scanned.");
     }
   };
@@ -340,19 +328,8 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       };
 
       // Save to database
-      const { error } = await supabase
-        .from('attendance_logs')
-        .insert([
-          {
-            class_id: activeSessionId,
-            student_id: payload.studentId,
-            student_name: payload.studentName || null,
-            nonce: payload.nonce,
-            timestamp: attendanceRecord.timestamp
-          }
-        ]);
-
-      if (!error) {
+      try {
+        await saveAttendance(activeSessionId, payload.studentId, payload.studentName, payload.nonce);
         // Success
         setAttendanceRecords(prev => [attendanceRecord, ...prev]);
         scannedNoncesRef.current.add(payload.nonce);
@@ -365,7 +342,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
           setScanMessage("Position QR code in frame");
           setLastScannedStudent(null);
         }, 3000);
-      } else {
+      } catch (err) {
         setScanMessage("Database error - try again");
         setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: false });
         setTimeout(() => setLastScannedStudent(null), 2000);

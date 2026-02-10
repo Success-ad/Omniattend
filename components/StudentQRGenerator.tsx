@@ -2,6 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import QRCode from 'qrcode';
 import { motion } from 'framer-motion';
 import { ArrowLeft, User, BookOpen, ChevronRight, Calendar, LogOut, QrCode as QrCodeIcon, RefreshCw } from 'lucide-react';
+import { auth, db } from '../services/firebaseClient';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const AVAILABLE_COURSES = [
   { id: 'CS-404', name: 'Network Security', desc: 'Protocol Analysis' },
@@ -84,7 +87,7 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
     }
   }, [selectedCourse, matricNumber, studentName]);
 
-  // Auto-refresh QR code every 30 seconds
+  // Auto-refresh QR code every 60 seconds
   useEffect(() => {
     if (step !== StudentStep.QR_DISPLAY) return;
 
