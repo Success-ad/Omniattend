@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import StudentQRGenerator from './components/StudentQRGenerator';
+// Import the student registration component so users can create accounts
+import StudentRegistration from './components/StudentRegistration';
 import LecturerScanner from './components/LecturerScanner';
 import { ShieldCheck, QrCode, ArrowRight, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -12,6 +14,8 @@ enum View {
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.LANDING);
+  // Local UI state: show the student registration overlay/modal
+  const [showStudentRegistration, setShowStudentRegistration] = useState(false);
 
   const goBack = () => setCurrentView(View.LANDING);
 
@@ -116,6 +120,20 @@ const App: React.FC = () => {
                 </div>
               </motion.footer>
 
+              {/*
+                Register shortcut: opens the full `StudentRegistration` flow as
+                an overlay. This keeps the landing "Student" flow (QR generator)
+                intact while giving users a clear path to create an account.
+              */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowStudentRegistration(true)}
+                  className="text-sm text-accent-400 hover:text-accent-300 underline"
+                >
+                  Register as a student
+                </button>
+              </div>
+
             </div>
           </div>
         );
@@ -125,6 +143,22 @@ const App: React.FC = () => {
   return (
     <div className="bg-dark-bg min-h-[100dvh] font-sans">
       {renderContent()}
+
+      {/*
+        Render the registration component as an overlay when requested.
+        - `onBack` closes the overlay.
+        - `onRegistrationSuccess` closes the overlay and navigates to the
+          student view so the student can access the QR flow immediately.
+      */}
+      {showStudentRegistration && (
+        <StudentRegistration
+          onBack={() => setShowStudentRegistration(false)}
+          onRegistrationSuccess={() => {
+            setShowStudentRegistration(false);
+            setCurrentView(View.STUDENT);
+          }}
+        />
+      )}
     </div>
   );
 };
