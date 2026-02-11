@@ -9,13 +9,12 @@ import { motion } from 'framer-motion';
 enum View {
   LANDING = 'LANDING',
   LECTURER = 'LECTURER',
-  STUDENT = 'STUDENT'
+  STUDENT = 'STUDENT',
+  REGISTRATION = 'REGISTRATION'
 }
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.LANDING);
-  // Local UI state: show the student registration overlay/modal
-  const [showStudentRegistration, setShowStudentRegistration] = useState(false);
 
   const goBack = () => setCurrentView(View.LANDING);
 
@@ -25,6 +24,16 @@ const App: React.FC = () => {
         return <LecturerScanner onBack={goBack} />;
       case View.STUDENT:
         return <StudentQRGenerator onBack={goBack} />;
+      // Render the registration screen as a dedicated full-screen view
+      case View.REGISTRATION:
+        return (
+          <StudentRegistration
+            onBack={goBack}
+            onRegistrationSuccess={() => {
+              setCurrentView(View.STUDENT);
+            }}
+          />
+        );
       default:
         return (
           <div className="min-h-[100dvh] relative flex flex-col items-center justify-center p-6 overflow-hidden">
@@ -120,17 +129,13 @@ const App: React.FC = () => {
                 </div>
               </motion.footer>
 
-              {/*
-                Register shortcut: opens the full `StudentRegistration` flow as
-                an overlay. This keeps the landing "Student" flow (QR generator)
-                intact while giving users a clear path to create an account.
-              */}
+              {/* Registration link: navigates to the dedicated registration view */}
               <div className="mt-4">
                 <button
-                  onClick={() => setShowStudentRegistration(true)}
+                  onClick={() => setCurrentView(View.REGISTRATION)}
                   className="text-sm text-accent-400 hover:text-accent-300 underline"
                 >
-                  Register as a student
+                  <strong>Register as a student</strong>
                 </button>
               </div>
 
@@ -143,22 +148,6 @@ const App: React.FC = () => {
   return (
     <div className="bg-dark-bg min-h-[100dvh] font-sans">
       {renderContent()}
-
-      {/*
-        Render the registration component as an overlay when requested.
-        - `onBack` closes the overlay.
-        - `onRegistrationSuccess` closes the overlay and navigates to the
-          student view so the student can access the QR flow immediately.
-      */}
-      {showStudentRegistration && (
-        <StudentRegistration
-          onBack={() => setShowStudentRegistration(false)}
-          onRegistrationSuccess={() => {
-            setShowStudentRegistration(false);
-            setCurrentView(View.STUDENT);
-          }}
-        />
-      )}
     </div>
   );
 };
