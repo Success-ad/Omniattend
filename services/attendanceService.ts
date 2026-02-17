@@ -16,6 +16,18 @@ export const saveAttendance = async (
     timestamp: new Date().toISOString()
   });
 };
+// Add a new lecturer (for testing purposes)
+await addDoc(collection(db, 'lecturers'), {
+  firstName: "Sarah",
+  lastName: "Johnson",
+  lecturerId: "LEC-001",
+  email: "lecturer@university.edu",
+  password: "123456",
+  department: "Computer Science",
+  courses: ["CS-404", "CS-302"],
+  createdAt: new Date().toISOString(),
+  isActive: true
+});
 
 // Get session history for a course
 export const getSessionHistory = async (courseId: string) => {
