@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { saveAttendance, createSession, getSessionHistory, loginLecturer, logoutLecturer } from '../services/attendanceService';
+import { saveAttendance, createSession, getSessionHistory, getAttendanceForSession, loginLecturer, logoutLecturer } from '../services/attendanceService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronRight, GraduationCap, BookOpen, ShieldCheck, Users, Calendar, FileText, Type, LogOut, Check, X, Camera, History, UserCheck, Fingerprint, QrCode as QrCodeIcon } from 'lucide-react';
 
@@ -53,6 +53,9 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
   const [sessionDesc, setSessionDesc] = useState('');
   const [activeSessionId, setActiveSessionId] = useState('');
   const [historySessions, setHistorySessions] = useState<any[]>([]);
+  const [selectedHistorySessionDetails, setSelectedHistorySessionDetails] = useState<any | null>(null);
+  const [historyAttendanceRecords, setHistoryAttendanceRecords] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Scanner State
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -142,6 +145,27 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       console.warn('Failed to load session history', err);
       setHistorySessions([]);
     }
+  };
+
+  const handleOpenSessionDetails = async (session: any) => {
+    const sessionKey = session.session_id || session.id;
+    if (!sessionKey) return;
+    setHistoryLoading(true);
+    try {
+      const records = await getAttendanceForSession(session.session_id || session.session_id === 0 ? session.session_id : session.session_id || session.id);
+      setHistoryAttendanceRecords(records);
+      setSelectedHistorySessionDetails(session);
+    } catch (err) {
+      console.warn('Failed to load attendance records for session', err);
+      setHistoryAttendanceRecords([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleCloseSessionDetails = () => {
+    setSelectedHistorySessionDetails(null);
+    setHistoryAttendanceRecords([]);
   };
 
   const handleCreateSessionSubmit = async (e: React.FormEvent) => {
@@ -433,6 +457,47 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
     );
   }
 
+  // Session Details Modal
+  if (selectedHistorySessionDetails) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60" onClick={handleCloseSessionDetails} />
+        <div className="relative bg-dark-bg max-w-2xl w-full mx-4 rounded-2xl p-6 z-60">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-white">{selectedHistorySessionDetails.name}</h3>
+              <p className="text-sm text-slate-400">{selectedHistorySessionDetails.date} • {selectedHistorySessionDetails.description || 'No description'}</p>
+            </div>
+            <button onClick={handleCloseSessionDetails} className="p-2 rounded-full glass-button text-slate-300">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <h4 className="text-sm text-slate-400 mb-2">Attendance ({historyAttendanceRecords.length})</h4>
+            {historyLoading ? (
+              <div className="text-slate-400">Loading...</div>
+            ) : historyAttendanceRecords.length === 0 ? (
+              <div className="glass-panel p-4 rounded-xl text-slate-400">No attendance records found.</div>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {historyAttendanceRecords.map((rec, idx) => (
+                  <div key={`${rec.id}-${idx}`} className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-white text-sm">{rec.student_name || rec.student_id}</p>
+                      <p className="text-xs text-slate-400 font-mono">{rec.student_id}</p>
+                    </div>
+                    <div className="text-xs text-slate-500">{new Date(typeof rec.timestamp === 'string' ? rec.timestamp : (rec.timestamp?.seconds ? rec.timestamp.seconds * 1000 : Date.now())).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // --- RENDER: SELECT COURSE ---
   if (step === LecturerStep.SELECT) {
     return (
@@ -615,27 +680,29 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
         </div>
 
         <div className="flex flex-col gap-4 max-w-lg mx-auto w-full z-10 pb-10">
-          {historySessions.length === 0 ? (
+            {historySessions.length === 0 ? (
             <div className="glass-panel p-8 rounded-3xl text-center">
               <History className="w-12 h-12 text-slate-600 mx-auto mb-4" />
               <p className="text-slate-400">No session history found.</p>
             </div>
           ) : (
-            historySessions.map((session, idx) => (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                key={session.id}
-                className="glass-panel p-5 rounded-2xl"
-              >
-                <h3 className="font-bold text-white text-lg mb-2">{session.name}</h3>
-                <p className="text-slate-400 text-sm mb-3">{session.description || "No description"}</p>
-                <div className="flex items-center gap-4 text-xs text-slate-500 font-mono">
-                  <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {session.date}</span>
-                </div>
-              </motion.div>
-            ))
+              historySessions.map((session, idx) => (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  key={session.id}
+                  onClick={() => handleOpenSessionDetails(session)}
+                  type="button"
+                  className="glass-panel p-5 rounded-2xl text-left hover:bg-white/5 transition-all"
+                >
+                  <h3 className="font-bold text-white text-lg mb-2">{session.name}</h3>
+                  <p className="text-slate-400 text-sm mb-3">{session.description || "No description"}</p>
+                  <div className="flex items-center gap-4 text-xs text-slate-500 font-mono">
+                    <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {session.date}</span>
+                  </div>
+                </motion.button>
+              ))
           )}
         </div>
       </div>
