@@ -1,5 +1,17 @@
 import { db } from './firebaseClient';
+import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+
+const auth = getAuth();
+
+export const loginLecturer = async (email: string, password: string) => {
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
+};
+
+export const logoutLecturer = async () => {
+  await signOut(auth);
+};
 
 // Save attendance record
 export const saveAttendance = async (
@@ -17,17 +29,6 @@ export const saveAttendance = async (
   });
 };
 // Add a new lecturer (for testing purposes)
-await addDoc(collection(db, 'lecturers'), {
-  firstName: "Sarah",
-  lastName: "Johnson",
-  lecturerId: "LEC-001",
-  email: "lecturer@university.edu",
-  password: "123456",
-  department: "Computer Science",
-  courses: ["CS-404", "CS-302"],
-  createdAt: new Date().toISOString(),
-  isActive: true
-});
 
 // Get session history for a course
 export const getSessionHistory = async (courseId: string) => {
