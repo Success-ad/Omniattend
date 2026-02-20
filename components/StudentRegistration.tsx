@@ -146,10 +146,10 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ onBack, onReg
       // Success!
       setSuccess(true);
       
-      // Redirect after 2 seconds
+      // Redirect after 5 seconds
       setTimeout(() => {
         onRegistrationSuccess();
-      }, 2000);
+      }, 5000);
 
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -174,7 +174,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ onBack, onReg
           <h2 className="text-3xl font-bold text-white mb-2">Registration Successful!</h2>
           <p className="text-slate-400 mb-1">Welcome, {formData.firstName}!</p>
           <p className="text-slate-500 text-sm">Matric Number: {formData.matricNumber.toUpperCase()}</p>
-          <p className="text-slate-500 text-sm mt-4">Redirecting to login...</p>
+          <p className="text-slate-500 text-sm mt-4">Redirecting to login....please wait!</p>
         </motion.div>
       </div>
     );

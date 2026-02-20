@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, User, BookOpen, ChevronRight, Calendar, LogOut, QrCode as QrCodeIcon, RefreshCw } from 'lucide-react';
 import { auth, db } from '../services/firebaseClient';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
 const AVAILABLE_COURSES = [
   { id: 'CS-404', name: 'Network Security', desc: 'Protocol Analysis' },
@@ -97,11 +97,30 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
     return () => clearInterval(interval);
   }, [step, generateQR]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!matricNumber.trim()) return;
+  const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    // 1. Find student by matric number
+    const q = query(collection(db, 'students'), where('matricNumber', '==', matricNumber.toUpperCase()));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      alert('Matric number not found');
+      return;
+    }
+
+    const studentData = snapshot.docs[0].data();
+
+    // 2. Sign in with their email + password
+    await signInWithEmailAndPassword(auth, studentData.email, password);
+
+    // 3. Set student name from Firestore
+    setStudentName(studentData.fullName);
     setStep(StudentStep.SELECT_COURSE);
-  };
+  } catch (err) {
+    alert('Invalid credentials');
+  }
+};
 
   const handleCourseSelect = (course: typeof AVAILABLE_COURSES[0]) => {
     setSelectedCourse(course);

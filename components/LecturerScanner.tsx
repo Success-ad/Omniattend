@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { saveAttendance, createSession, getSessionHistory } from '../services/attendanceService';
+import { saveAttendance, createSession, getSessionHistory, loginLecturer, logoutLecturer } from '../services/attendanceService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ChevronRight, GraduationCap, BookOpen, ShieldCheck, Users, Calendar, FileText, Type, LogOut, Check, X, Camera, History, UserCheck, Fingerprint, QrCode as QrCodeIcon } from 'lucide-react';
 
@@ -99,19 +99,25 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
     }
   };
 
-  const handleLogout = () => {
-    stopStream();
-    setLecturerId('');
-    setPassword('');
-    setSelectedCourse(null);
-    setStep(LecturerStep.AUTH);
-  };
+  const handleLogout = async () => {
+  await logoutLecturer();
+  // rest of your existing logout logic...
+  setLecturerId('');
+  setPassword('');
+  setSelectedCourse(null);
+  setStep(LecturerStep.AUTH);
+};
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!lecturerId.trim() || !password.trim()) return;
+  const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    // lecturerId field becomes their email
+    await loginLecturer(lecturerId, password);
     setStep(LecturerStep.SELECT);
-  };
+  } catch (err) {
+    alert("Invalid credentials");
+  }
+};
 
   const handleCourseSelect = (course: typeof AVAILABLE_COURSES[0]) => {
     setSelectedCourse(course);
@@ -388,14 +394,14 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <label className="block text-sm font-bold text-slate-300 mb-2 uppercase tracking-wider">
-                  Lecturer ID
+                  Lecturer ID (Email)
                 </label>
                 <input
                   type="text"
                   value={lecturerId}
                   onChange={(e) => setLecturerId(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all font-mono"
-                  placeholder="e.g., LEC-001"
+                  placeholder="e.g, lecturer@babcock.com"
                   required
                 />
               </div>
