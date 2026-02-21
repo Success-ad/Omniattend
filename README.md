@@ -59,7 +59,6 @@ an attendance system for students and lecturers
   uid: "copy_firebase_uid_here",
   firstName: "Dr. Sarah",
   lastName: "Johnson",
-  lecturerId: "LEC-001", // This is what they login with
   email: "lecturer@university.edu",
   department: "Computer Science",
   courses: ["CS-404", "CS-302"],
@@ -92,16 +91,16 @@ await addDoc(collection(db, 'lecturers'), {
 
 If you want lecturers to self-register, create a `LecturerRegistration.tsx` component (similar to StudentRegistration).
 
-## 🎯 ATTENDANCE PROCESS - This is the Magic!
+## 🎯 ATTENDANCE PROCESS
 
 ### Phase 1: Lecturer Creates Session
 
 **What Happens:**
 1. Lecturer clicks "Lecturer" on landing page
 2. Logs in with:
-   - Lecturer ID: `LEC-001`
-   - Password: (their password)
-3. Selects course: "Network Security (CS-404)"
+   - Email: 'lecturer@babcock.com'
+   - Password: (their password) //123456
+3. Selects course: e.g "Network Security (CS-404)"
 4. Clicks "Start Scanner"
 5. Fills in session details:
    - Session Name: "Lecture: Network Security"
@@ -131,7 +130,7 @@ If you want lecturers to self-register, create a `LecturerRegistration.tsx` comp
 
 1. **Student shows QR on phone**
    ```
-   Student: "Here's my QR code, sir!"
+   Student: "Here's my QR code"
    [QR Code displayed on phone]
    ```
 
@@ -212,5 +211,5 @@ ORDER BY created_at DESC
     date: "2025-02-12",
     created_at: "2025-02-12T14:00:00Z"
   },
-  // ... more sessions
+   **You can click on each session to view the students present at that attendance session taken**
 ]

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import StudentQRGenerator from './components/StudentQRGenerator';
-// Import the student registration component so users can create accounts
 import StudentRegistration from './components/StudentRegistration';
 import LecturerScanner from './components/LecturerScanner';
 import { ShieldCheck, QrCode, ArrowRight, Camera } from 'lucide-react';
