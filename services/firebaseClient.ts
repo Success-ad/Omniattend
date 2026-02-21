@@ -4,12 +4,12 @@ import { getFirestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBDIV6tV1Unz33lBhk5q9_BrC_k_4Uydxw",
-  authDomain: "omniattend-26eda.firebaseapp.com",
-  projectId: "omniattend-26eda",
-  storageBucket: "omniattend-26eda.firebasestorage.app",
-  messagingSenderId: "137034690470",
-  appId: "1:137034690470:web:dca54bfcae450a25096967"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
