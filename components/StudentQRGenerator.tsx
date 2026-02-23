@@ -10,7 +10,11 @@ const AVAILABLE_COURSES = [
   { id: 'CS-404', name: 'Network Security', desc: 'Protocol Analysis' },
   { id: 'CS-302', name: 'Algorithms II', desc: 'Data Structures' },
   { id: 'ETH-101', name: 'Cyber Ethics', desc: 'Legal Frameworks' },
-  { id: 'SYS-500', name: 'Kernel Arch', desc: 'System Design' },
+  { id: 'CS-402', name: 'Kernel Arch', desc: 'System Design' },
+  { id: 'CS-309', name: 'Intro to AI', desc: 'Machine Learning Basics' },
+  { id: 'CS-410', name: 'Cloud Security', desc: 'Securing Cloud Infrastructures' },
+  { id: 'CS-305', name: 'Database Systems', desc: 'SQL & NoSQL Databases' },
+  { id: 'CS-315', name: 'Web Dev', desc: 'Full Stack Development' },
 ];
 
 interface StudentQRPayload {
@@ -42,6 +46,8 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
   
   // Selection State
   const [selectedCourse, setSelectedCourse] = useState<typeof AVAILABLE_COURSES[0] | null>(null);
+  // Student-specific enrolled course IDs (populated after login)
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
   
   // QR State
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
@@ -116,6 +122,8 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
 
     // 3. Set student name from Firestore
     setStudentName(studentData.fullName);
+    // 4. store enrolled courses for this student so we can show only those
+    setEnrolledCourseIds(Array.isArray(studentData.enrolledCourses) ? studentData.enrolledCourses : []);
     setStep(StudentStep.SELECT_COURSE);
   } catch (err) {
     alert('Invalid credentials');
@@ -239,7 +247,15 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
         </div>
 
         <div className="flex flex-col gap-4 max-w-lg mx-auto w-full z-10">
-          {AVAILABLE_COURSES.map((course, idx) => (
+          {(() => {
+            const studentCourses = AVAILABLE_COURSES.filter(c => enrolledCourseIds.includes(c.id));
+            if (studentCourses.length === 0) {
+              return (
+                <div className="glass-panel p-6 rounded-2xl text-center text-slate-400">No enrolled courses found for your account.</div>
+              );
+            }
+
+            return studentCourses.map((course, idx) => (
             <motion.button
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -259,7 +275,8 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
               </div>
               <ChevronRight className="w-5 h-5 text-slate-500" />
             </motion.button>
-          ))}
+            ));
+          })()}
         </div>
       </div>
     );

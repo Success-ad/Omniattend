@@ -6,9 +6,13 @@ import { ArrowLeft, ChevronRight, GraduationCap, BookOpen, ShieldCheck, Users, C
 
 const AVAILABLE_COURSES = [
   { id: 'CS-404', name: 'Network Security', desc: 'Protocol Analysis', totalStudents: 42 },
-  { id: 'CS-302', name: 'Algorithms II', desc: 'Data Structures', totalStudents: 128 },
+  { id: 'CS-302', name: 'Algorithms II', desc: 'Data Structures', totalStudents: 82 },
   { id: 'ETH-101', name: 'Cyber Ethics', desc: 'Legal Frameworks', totalStudents: 35 },
-  { id: 'SYS-500', name: 'Kernel Arch', desc: 'System Design', totalStudents: 18 },
+  { id: 'CS-402', name: 'Kernel Arch', desc: 'System Design', totalStudents: 18 },
+  { id: 'CS-309', name: 'Intro to AI', desc: 'Machine Learning Basics', totalStudents: 25 },
+  { id: 'CS-410', name: 'Cloud Security', desc: 'Securing Cloud Infrastructures', totalStudents: 30 },
+  { id: 'CS-305', name: 'Database Systems', desc: 'SQL & NoSQL Databases', totalStudents: 40 },
+  { id: 'CS-315', name: 'Web Dev', desc: 'Full Stack Development', totalStudents: 38 }
 ];
 
 enum LecturerStep {

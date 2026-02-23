@@ -16,7 +16,11 @@ const AVAILABLE_COURSES = [
   { id: 'CS-404', name: 'Network Security', desc: 'Protocol Analysis' },
   { id: 'CS-302', name: 'Algorithms II', desc: 'Data Structures' },
   { id: 'ETH-101', name: 'Cyber Ethics', desc: 'Legal Frameworks' },
-  { id: 'SYS-500', name: 'Kernel Arch', desc: 'System Design' },
+  { id: 'CS-402', name: 'Kernel Arch', desc: 'System Design' },
+  { id: 'CS-309', name: 'Intro to AI', desc: 'Machine Learning Basics' },
+  { id: 'CS-410', name: 'Cloud Security', desc: 'Securing Cloud Infrastructures' },
+  { id: 'CS-305', name: 'Database Systems', desc: 'SQL & NoSQL Databases' },
+  { id: 'CS-315', name: 'Web Dev', desc: 'Full Stack Development' },
 ];
 
 const StudentRegistration: React.FC<StudentRegistrationProps> = ({ onBack, onRegistrationSuccess }) => {
