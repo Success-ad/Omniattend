@@ -116,7 +116,15 @@ const App: React.FC = () => {
                   </div>
                 </motion.button>
               </div>
-
+              {/* Registration link: navigates to the dedicated registration view */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setCurrentView(View.REGISTRATION)}
+                  className="text-sm text-accent-400 hover:text-accent-300 underline"
+                >
+                  <strong>Register as a student</strong>
+                </button>
+              </div>
               <motion.footer 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -127,16 +135,6 @@ const App: React.FC = () => {
                   Powered by Secure QR Technology
                 </div>
               </motion.footer>
-
-              {/* Registration link: navigates to the dedicated registration view */}
-              <div className="mt-4">
-                <button
-                  onClick={() => setCurrentView(View.REGISTRATION)}
-                  className="text-sm text-accent-400 hover:text-accent-300 underline"
-                >
-                  <strong>Register as a student</strong>
-                </button>
-              </div>
 
             </div>
           </div>

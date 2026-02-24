@@ -15,14 +15,16 @@ export const logoutLecturer = async () => {
 
 // Save attendance record
 export const saveAttendance = async (
-  sessionId: string, 
-  studentId: string, 
-  studentName?: string, 
-  nonce?: string
+  sessionId: string,
+  studentId: string,
+  studentName?: string,
+  nonce?: string,
+  studentUid?: string | null
 ) => {
   return await addDoc(collection(db, 'attendance_logs'), {
     class_id: sessionId,
     student_id: studentId,
+    student_uid: studentUid || null,
     student_name: studentName || null,
     nonce: nonce || `AUTO-${Date.now()}`,
     timestamp: new Date().toISOString()
@@ -92,4 +94,29 @@ export const createSession = async (sessionData: {
   created_at: string;
 }) => {
   return await addDoc(collection(db, 'sessions'), sessionData);
+};
+
+// Get attendance records for a student across all sessions/courses
+export const getAttendanceForStudent = async (studentId: string) => {
+  try {
+    const q = query(collection(db, 'attendance_logs'), where('student_id', '==', studentId));
+    const snapshot = await getDocs(q);
+
+    const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    records.sort((a: any, b: any) => {
+      const toMillis = (v: any) => {
+        if (!v) return 0;
+        if (typeof v === 'string') return Date.parse(v) || 0;
+        if (v.seconds) return v.seconds * 1000 + (v.nanoseconds ? Math.floor(v.nanoseconds / 1e6) : 0);
+        return 0;
+      };
+      return toMillis(b.timestamp) - toMillis(a.timestamp);
+    });
+
+    return records;
+  } catch (err) {
+    console.warn('Failed to load attendance for student', err);
+    return [];
+  }
 };

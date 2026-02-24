@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { motion } from 'framer-motion';
 import { ArrowLeft, User, BookOpen, ChevronRight, Calendar, LogOut, QrCode as QrCodeIcon, RefreshCw } from 'lucide-react';
 import { auth, db } from '../services/firebaseClient';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getAttendanceForStudent } from '../services/attendanceService';
 
 const AVAILABLE_COURSES = [
   { id: 'CS-404', name: 'Network Security', desc: 'Protocol Analysis' },
@@ -29,6 +30,7 @@ interface StudentQRPayload {
 enum StudentStep {
   LOGIN = 'LOGIN',
   SELECT_COURSE = 'SELECT_COURSE',
+  HISTORY = 'HISTORY',
   QR_DISPLAY = 'QR_DISPLAY'
 }
 
@@ -156,6 +158,71 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
     setStep(StudentStep.LOGIN);
   };
 
+  // Attendance history state
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  // UI state for grouped history
+  const [expandedCourse, setExpandedCourse] = useState<Record<string, boolean>>({});
+  const [visiblePerGroup, setVisiblePerGroup] = useState<Record<string, number>>({});
+
+  const RECORDS_PAGE_SIZE = 3;
+
+  useEffect(() => {
+    let mounted = true;
+    const loadHistory = async () => {
+      if (step !== StudentStep.HISTORY) return;
+      if (!matricNumber) return;
+      setLoadingHistory(true);
+      try {
+        const records = await getAttendanceForStudent(matricNumber.toUpperCase());
+        if (mounted) setAttendanceRecords(records);
+      } catch (err) {
+        console.warn('Failed to load student history', err);
+        if (mounted) setAttendanceRecords([]);
+      } finally {
+        if (mounted) setLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+    return () => { mounted = false; };
+  }, [step, matricNumber]);
+
+  // Group records by inferred course (from course_id or class_id prefix) then by date
+  const groupedRecords = useMemo(() => {
+    const groups: Record<string, Record<string, any[]>> = {};
+    attendanceRecords.forEach(r => {
+      const classId = r.class_id || r.session_id || '';
+      const course = (r.course_id) || (classId ? classId.split('-')[0] : 'Unknown');
+      const ts = r.timestamp ? (typeof r.timestamp === 'string' ? r.timestamp : (r.timestamp.seconds ? new Date(r.timestamp.seconds * 1000).toISOString() : '')) : '';
+      const dateKey = ts ? new Date(ts).toLocaleDateString() : 'Unknown Date';
+      if (!groups[course]) groups[course] = {};
+      if (!groups[course][dateKey]) groups[course][dateKey] = [];
+      groups[course][dateKey].push(r);
+    });
+
+    // Sort each date group by timestamp descending
+    Object.keys(groups).forEach(course => {
+      Object.keys(groups[course]).forEach(date => {
+        groups[course][date].sort((a: any, b: any) => {
+          const ta = a.timestamp && typeof a.timestamp === 'string' ? Date.parse(a.timestamp) : (a.timestamp?.seconds ? a.timestamp.seconds * 1000 : 0);
+          const tb = b.timestamp && typeof b.timestamp === 'string' ? Date.parse(b.timestamp) : (b.timestamp?.seconds ? b.timestamp.seconds * 1000 : 0);
+          return tb - ta;
+        });
+      });
+    });
+
+    return groups;
+  }, [attendanceRecords]);
+
+  const toggleCourse = (course: string) => {
+    setExpandedCourse(prev => ({ ...prev, [course]: !prev[course] }));
+  };
+
+  const showMore = (key: string) => {
+    setVisiblePerGroup(prev => ({ ...prev, [key]: (prev[key] || RECORDS_PAGE_SIZE) + RECORDS_PAGE_SIZE }));
+  };
+
   // --- RENDER: LOGIN ---
   if (step === StudentStep.LOGIN) {
     return (
@@ -247,6 +314,26 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
         </div>
 
         <div className="flex flex-col gap-4 max-w-lg mx-auto w-full z-10">
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.02 }}
+            onClick={() => setStep(StudentStep.HISTORY)}
+            className="glass-panel p-6 rounded-2xl text-left hover:bg-white/5 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                  <Calendar className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-xl text-white mb-1">Attendance History</h3>
+                  <p className="text-sm text-slate-400">View your past attendance records</p>
+                </div>
+              </div>
+              <ChevronRight className="w-6 h-6 text-slate-500" />
+            </div>
+          </motion.button>
           {(() => {
             const studentCourses = AVAILABLE_COURSES.filter(c => enrolledCourseIds.includes(c.id));
             if (studentCourses.length === 0) {
@@ -277,6 +364,50 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({ onBack }) => {
             </motion.button>
             ));
           })()}
+        </div>
+      </div>
+    );
+  }
+
+  // --- RENDER: HISTORY ---
+  if (step === StudentStep.HISTORY) {
+    return (
+      <div className="flex flex-col min-h-[100dvh] p-6 relative overflow-hidden bg-dark-bg">
+        <div className="flex items-center gap-4 mb-8 pt-2 z-10">
+          <button onClick={() => setStep(StudentStep.SELECT_COURSE)} className="p-3 rounded-full glass-button text-slate-300">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-white leading-none">Attendance History</h2>
+            <span className="text-sm text-slate-400 font-mono">{matricNumber}</span>
+          </div>
+          <button onClick={handleLogout} className="p-3 rounded-full glass-button text-red-400 hover:text-red-300">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="max-w-3xl mx-auto w-full z-10">
+          {loadingHistory ? (
+            <div className="glass-panel p-6 rounded-2xl text-center text-slate-400">Loading...</div>
+          ) : attendanceRecords.length === 0 ? (
+            <div className="glass-panel p-6 rounded-2xl text-center text-slate-400">No attendance records found.</div>
+          ) : (
+            <div className="space-y-3">
+              {attendanceRecords.map((r, i) => (
+                <div key={r.id || i} className="glass-panel p-4 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-slate-400">{r.class_id || r.session_id || 'Unknown Session'}</div>
+                    <div className="font-bold text-white">{r.student_name || matricNumber}</div>
+                    <div className="text-xs text-slate-400">{r.nonce ? `Nonce: ${r.nonce}` : ''}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-slate-400">{r.course_id || ''}</div>
+                    <div className="text-xs text-slate-300">{r.timestamp ? new Date(typeof r.timestamp === 'string' ? r.timestamp : (r.timestamp?.seconds ? r.timestamp.seconds * 1000 : Date.now())).toLocaleString() : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
