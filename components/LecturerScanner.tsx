@@ -65,7 +65,9 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const isScanningRef = useRef<boolean>(false);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const attendanceRecordsRef = useRef<AttendanceRecord[]>([]);
   const [lastScannedStudent, setLastScannedStudent] = useState<{ id: string, name?: string, success: boolean } | null>(null);
   const [scanMessage, setScanMessage] = useState<string>('Position QR code in frame');
 
@@ -77,6 +79,20 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
   // Scanning cooldown to prevent duplicate scans
   const lastScanTimeRef = useRef<number>(0);
   const scannedNoncesRef = useRef<Set<string>>(new Set());
+  const selectedCourseRef = useRef<typeof AVAILABLE_COURSES[0] | null>(null);
+  const activeSessionIdRef = useRef<string>('');
+
+  useEffect(() => {
+    attendanceRecordsRef.current = attendanceRecords;
+  }, [attendanceRecords]);
+
+  useEffect(() => {
+    selectedCourseRef.current = selectedCourse;
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
 
   const handleInternalBack = () => {
     switch (step) {
@@ -241,18 +257,19 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
   };
 
   // Stop camera stream
-  const stopStream = () => {
+  const stopStream = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
+    isScanningRef.current = false;
     setIsScanning(false);
-  };
+  }, []);
 
   // Start camera and scanning
   const startScanning = useCallback(async () => {
-    if (isScanning) return;
+    if (isScanningRef.current) return;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -266,29 +283,57 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.setAttribute("playsinline", "true");
-        await videoRef.current.play();
+        videoRef.current.muted = true;
+        
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          try {
+            await playPromise;
+          } catch (err) {
+            console.error('Play error:', err);
+            setScanMessage("Camera play failed, retrying...");
+            stopStream();
+            setTimeout(() => startScanning(), 500);
+            return;
+          }
+        }
+        
+        isScanningRef.current = true;
         setIsScanning(true);
+        setScanMessage("Position QR code in frame");
         requestAnimationFrame(tick);
       }
     } catch (err) {
       setScanMessage("Could not access camera");
-      console.error(err);
+      console.error('Camera access error:', err);
     }
-  }, [isScanning]);
+  }, [stopStream]);
 
   // QR Scanner tick function
   const tick = () => {
-    if (!isScanning || !videoRef.current || videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
-      if (isScanning) {
-        requestAnimationFrame(tick);
-      }
+    if (!isScanningRef.current) return;
+
+    const video = videoRef.current;
+    
+    // Safety check: if stream is lost, attempt recovery
+    if (!video || !video.srcObject) {
+      console.warn('Stream lost during scan, restarting...');
+      isScanningRef.current = false;
+      setIsScanning(false);
+      setTimeout(() => startScanning(), 100);
+      return;
+    }
+
+    // Only process if video has enough data (less strict than HAVE_ENOUGH_DATA)
+    if (video.readyState < video.HAVE_CURRENT_DATA) {
+      requestAnimationFrame(tick);
       return;
     }
 
     const canvas = canvasRef.current;
-    const video = videoRef.current;
 
-    if (canvas) {
+    // Only draw if canvas exists and video has valid dimensions
+    if (canvas && video.videoHeight > 0 && video.videoWidth > 0) {
       canvas.height = video.videoHeight;
       canvas.width = video.videoWidth;
       const ctx = canvas.getContext("2d");
@@ -307,7 +352,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       }
     }
     
-    requestAnimationFrame(tick);
+    if (isScanningRef.current) requestAnimationFrame(tick);
   };
 
   // Handle successful QR scan
@@ -338,7 +383,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       }
 
       // Verify course match
-      if (selectedCourse && payload.courseId !== selectedCourse.id) {
+      if (selectedCourseRef.current && payload.courseId !== selectedCourseRef.current.id) {
         setScanMessage("Wrong course QR code");
         setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: false });
         setTimeout(() => setLastScannedStudent(null), 2000);
@@ -346,7 +391,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       }
 
       // Check if student already marked present in this session
-      const alreadyMarked = attendanceRecords.some(record => record.studentId === payload.studentId);
+      const alreadyMarked = attendanceRecordsRef.current.some(record => record.studentId === payload.studentId);
       if (alreadyMarked) {
         setScanMessage("Student already marked present");
         setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: false });
@@ -363,7 +408,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
 
       // Save to database
       try {
-        await saveAttendance(activeSessionId, payload.studentId, payload.studentName, payload.nonce);
+        await saveAttendance(activeSessionIdRef.current, payload.studentId, payload.studentName, payload.nonce);
         // Success
         setAttendanceRecords(prev => [attendanceRecord, ...prev]);
         scannedNoncesRef.current.add(payload.nonce);
@@ -399,7 +444,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
     }
 
     return () => stopStream();
-  }, [step, startScanning]);
+  }, [step, startScanning, stopStream]);
 
   // --- RENDER: LOGIN ---
   if (step === LecturerStep.AUTH) {
