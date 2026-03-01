@@ -79,6 +79,8 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
   // Scanning cooldown to prevent duplicate scans
   const lastScanTimeRef = useRef<number>(0);
   const scannedNoncesRef = useRef<Set<string>>(new Set());
+  const processingNoncesRef = useRef<Set<string>>(new Set());
+  const processingStudentIdsRef = useRef<Set<string>>(new Set());
   const selectedCourseRef = useRef<typeof AVAILABLE_COURSES[0] | null>(null);
   const activeSessionIdRef = useRef<string>('');
 
@@ -101,6 +103,9 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
         stopStream();
         setStep(LecturerStep.MODE_SELECT);
         setAttendanceRecords([]);
+        scannedNoncesRef.current.clear();
+        processingNoncesRef.current.clear();
+        processingStudentIdsRef.current.clear();
         break;
       case LecturerStep.MODE_SELECT:
         setStep(LecturerStep.COURSE_DASHBOARD);
@@ -212,6 +217,8 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
     // Reset attendance records and scanner state
     setAttendanceRecords([]);
     scannedNoncesRef.current.clear();
+    processingNoncesRef.current.clear();
+    processingStudentIdsRef.current.clear();
     setStep(LecturerStep.MODE_SELECT);
   };
 
@@ -375,7 +382,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       }
 
       // Check if nonce was already scanned (prevent duplicate scans)
-      if (scannedNoncesRef.current.has(payload.nonce)) {
+      if (scannedNoncesRef.current.has(payload.nonce) || processingNoncesRef.current.has(payload.nonce)) {
         setScanMessage("Already scanned!");
         setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: false });
         setTimeout(() => setLastScannedStudent(null), 2000);
@@ -392,6 +399,12 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
 
       // Check if student already marked present in this session
       const alreadyMarked = attendanceRecordsRef.current.some(record => record.studentId === payload.studentId);
+      if (processingStudentIdsRef.current.has(payload.studentId)) {
+        setScanMessage("Student already marked present");
+        setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: false });
+        setTimeout(() => setLastScannedStudent(null), 2000);
+        return;
+      }
       if (alreadyMarked) {
         setScanMessage("Student already marked present");
         setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: false });
@@ -408,10 +421,17 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
 
       // Save to database
       try {
+        // Mark as processing immediately to prevent duplicate frames before save completes
+        processingNoncesRef.current.add(payload.nonce);
+        processingStudentIdsRef.current.add(payload.studentId);
+        lastScanTimeRef.current = now;
+
         await saveAttendance(activeSessionIdRef.current, payload.studentId, payload.studentName, payload.nonce);
         // Success
         setAttendanceRecords(prev => [attendanceRecord, ...prev]);
         scannedNoncesRef.current.add(payload.nonce);
+        processingNoncesRef.current.delete(payload.nonce);
+        processingStudentIdsRef.current.delete(payload.studentId);
         lastScanTimeRef.current = now;
         setScanMessage(`✓ ${payload.studentName || payload.studentId} marked present`);
         setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: true });
@@ -422,6 +442,8 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
           setLastScannedStudent(null);
         }, 3000);
       } catch (err) {
+        processingNoncesRef.current.delete(payload.nonce);
+        processingStudentIdsRef.current.delete(payload.studentId);
         setScanMessage("Database error - try again");
         setLastScannedStudent({ id: payload.studentId, name: payload.studentName, success: false });
         setTimeout(() => setLastScannedStudent(null), 2000);
