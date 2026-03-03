@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@digitalpersona/devices": "^0.2.6",
     "@digitalpersona/websdk": "^1.1.0",
     "firebase": "^12.9.0",
     "framer-motion": "10.16.4",
