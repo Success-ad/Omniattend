@@ -154,31 +154,53 @@ class FingerprintService {
   }
 
   async verifyAndMatch(
-    capturedTemplate: FingerprintTemplate,
-    _sessionId: string
-  ): Promise<{ matched: boolean; studentId?: string; studentName?: string }> {
-    try {
-      const snapshot = await getDocs(collection(db, 'fingerprint_templates'));
-      for (const doc of snapshot.docs) {
-        const enrolled = doc.data();
-        const stored: FingerprintTemplate[] = enrolled.templates ?? [];
-        for (const t of stored) {
-          const similarity = this.compareTemplates(capturedTemplate.data, t.data);
-          if (similarity > 0.85) {
-            return {
-              matched: true,
-              studentId: enrolled.student_id,
-              studentName: enrolled.student_name,
-            };
-          }
+  capturedTemplate: FingerprintTemplate,
+  _sessionId: string
+): Promise<{ matched: boolean; studentId?: string; studentName?: string }> {
+  try {
+    const snapshot = await getDocs(collection(db, 'fingerprint_templates'));
+    let bestMatch = { similarity: 0, studentId: '', studentName: '' };
+
+    for (const doc of snapshot.docs) {
+      const enrolled = doc.data();
+      const stored: FingerprintTemplate[] = enrolled.templates ?? [];
+
+      let studentBestScore = 0;
+      for (const t of stored) {
+        const similarity = await this.compareTemplates(capturedTemplate.data, t.data);
+        if (similarity > studentBestScore) {
+          studentBestScore = similarity;
         }
       }
-      return { matched: false };
-    } catch (err) {
-      console.error('[FP] verifyAndMatch error:', err);
-      throw err;
+
+      console.log(`[FP] ${enrolled.student_name}: ${(studentBestScore * 100).toFixed(1)}%`);
+
+      if (studentBestScore > bestMatch.similarity) {
+        bestMatch = {
+          similarity: studentBestScore,
+          studentId: enrolled.student_id,
+          studentName: enrolled.student_name,
+        };
+      }
     }
+
+    console.log(`[FP] Best match: ${bestMatch.studentName} at ${(bestMatch.similarity * 100).toFixed(1)}%`);
+
+    if (bestMatch.similarity > 0.80) {
+      return {
+        matched: true,
+        studentId: bestMatch.studentId,
+        studentName: bestMatch.studentName,
+      };
+    }
+
+    return { matched: false };
+
+  } catch (err) {
+    console.error('[FP] verifyAndMatch error:', err);
+    throw err;
   }
+}
 
   async isEnrolled(studentId: string): Promise<boolean> {
     const q = query(
@@ -189,15 +211,21 @@ class FingerprintService {
     return !snap.empty;
   }
 
-  private compareTemplates(t1: string, t2: string): number {
-    if (t1 === t2) return 1.0;
-    const len = Math.min(200, t1.length, t2.length);
-    let matches = 0;
-    for (let i = 0; i < len; i++) {
-      if (t1[i] === t2[i]) matches++;
-    }
-    return matches / len;
+ private async compareTemplates(t1: string, t2: string): Promise<number> {
+  try {
+    const res = await fetch('http://localhost:3002/api/fingerprint/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template1: t1, template2: t2 }),
+    });
+    const { score } = await res.json();
+    console.log(`[FP] Compare score: ${(score * 100).toFixed(1)}%`);
+    return score;
+  } catch (err) {
+    console.error('[FP] Compare error:', err);
+    return 0;
   }
+}
 
   async dispose(): Promise<void> {
     this.stopReading();

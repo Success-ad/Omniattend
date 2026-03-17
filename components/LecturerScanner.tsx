@@ -719,7 +719,7 @@ if (step === LecturerStep.SELECT) {
                   <div className="flex justify-between"><span className="text-slate-400 text-sm">Scans Required</span><span className="text-emerald-400 font-bold">{ENROLL_TOTAL} fingerprints</span></div>
                 </div>
               </div>
-              <p className="text-slate-400 text-sm mb-6">The student will need to place their finger on the scanner <strong className="text-white">{ENROLL_TOTAL} times</strong>. Ask them to sit at the computer.</p>
+              <p className="text-slate-400 text-sm mb-6">The student will need to place their finger on the scanner <strong className="text-white">{ENROLL_TOTAL} times</strong></p>
               <div className="flex gap-3">
                 <button onClick={() => setEnrollPhase('search')} className="flex-1 py-3 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-semibold hover:bg-white/10 transition-colors">Back</button>
                 <button onClick={handleStartEnrollScanning} className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
@@ -756,8 +756,7 @@ if (step === LecturerStep.SELECT) {
               <h3 className="text-2xl font-bold text-white mb-2">
                 Scan {enrollScanCount + 1} of {ENROLL_TOTAL}
               </h3>
-              <p className="text-slate-400 mb-2">Ask <span className="text-white font-semibold">{enrollStudentName}</span> to place their finger</p>
-              <p className="text-slate-500 text-sm">Hold still until the scanner beeps</p>
+              <p className="text-slate-400 mb-2">Ask <span className="text-white font-semibold">{enrollStudentName}</span> to place their finger on the scanner</p>
             </motion.div>
           )}
 

@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000",
+    "dev": "concurrently \"vite --port 3000\" \"node server.js\"",
+    "server": "node server.js",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -12,20 +13,21 @@
     "@digitalpersona/core": "^0.2.6",
     "@digitalpersona/devices": "^0.2.6",
     "@digitalpersona/websdk": "^1.1.0",
-    "express": "^4.21.2",
+    "express": "^4.22.1",
     "firebase": "^12.9.0",
     "framer-motion": "10.16.4",
+    "jimp": "^1.6.0",
     "jsqr": "1.4.0",
     "lucide-react": "0.292.0",
     "qrcode": "1.5.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "ws": "^8.18.0"
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "concurrently": "^9.1.2",
+    "concurrently": "^9.2.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

@@ -41,15 +41,22 @@
       });
 
       reader.on('SamplesAcquired', (e) => {
-        console.log('Sample acquired:', e);
-        const samples = e?.samples ?? e?.Samples ?? [];
-        const first = Array.isArray(samples) ? samples[0] : samples;
-        const data = first?.Data ?? first?.data ?? first;
-        window.parent.postMessage({
-          type: 'sample',
-          data: typeof data === 'string' ? data : JSON.stringify(data)
-        }, '*');
-      });
+  console.log('Full sample event:', JSON.stringify(e));
+  const samples = e?.samples ?? [];
+  const first = Array.isArray(samples) ? samples[0] : samples;
+  console.log('First sample:', JSON.stringify(first));
+  console.log('First sample keys:', first ? Object.keys(first) : 'null');
+  console.log('First sample data type:', typeof first);
+  console.log('First sample toString:', first?.toString?.());
+  
+  const data = first?.Data ?? first?.data ?? first;
+  console.log('Extracted data (first 100):', typeof data === 'string' ? data.substring(0, 100) : JSON.stringify(data)?.substring(0, 100));
+  
+  window.parent.postMessage({ 
+    type: 'sample', 
+    data: typeof data === 'string' ? data : JSON.stringify(data)
+  }, '*');
+});
 
       reader.on('QualityReported', (e) => {
         console.log('Quality:', e);
