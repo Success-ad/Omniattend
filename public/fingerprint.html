@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <script src="/websdk.client.ui.min.js"></script>
+  <script src="/dp-core.js"></script>
+  <script src="/dp-devices.js"></script>
+</head>
+<body>
+<script>
+  let reader = null;
+
+  function initReader() {
+    try {
+      const SDK = window.dp?.devices;
+      if (!SDK) {
+        window.parent.postMessage({ type: 'error', message: 'SDK not loaded — dp.devices missing' }, '*');
+        return;
+      }
+
+      const ReaderClass = SDK.FingerprintReader ?? SDK.WebApi;
+      if (!ReaderClass) {
+        window.parent.postMessage({ type: 'error', message: 'FingerprintReader not found' }, '*');
+        return;
+      }
+
+      // Assign to the outer `reader` variable, not a new local one
+      reader = new ReaderClass();
+
+      reader.on('DeviceConnected', (e) => {
+        console.log('Device connected:', e);
+        window.parent.postMessage({
+          type: 'connected',
+          deviceId: e?.deviceId ?? e?.device?.deviceId ?? 'unknown'
+        }, '*');
+      });
+
+      reader.on('DeviceDisconnected', () => {
+        console.log('Device disconnected');
+        window.parent.postMessage({ type: 'disconnected' }, '*');
+      });
+
+      reader.on('SamplesAcquired', (e) => {
+  console.log('Full sample event:', JSON.stringify(e));
+  const samples = e?.samples ?? [];
+  const first = Array.isArray(samples) ? samples[0] : samples;
+  console.log('First sample:', JSON.stringify(first));
+  console.log('First sample keys:', first ? Object.keys(first) : 'null');
+  console.log('First sample data type:', typeof first);
+  console.log('First sample toString:', first?.toString?.());
+  
+  const data = first?.Data ?? first?.data ?? first;
+  console.log('Extracted data (first 100):', typeof data === 'string' ? data.substring(0, 100) : JSON.stringify(data)?.substring(0, 100));
+  
+  window.parent.postMessage({ 
+    type: 'sample', 
+    data: typeof data === 'string' ? data : JSON.stringify(data)
+  }, '*');
+});
+
+      reader.on('QualityReported', (e) => {
+        console.log('Quality:', e);
+        window.parent.postMessage({
+          type: 'quality',
+          value: e?.quality ?? e?.Quality ?? 0
+        }, '*');
+      });
+
+      reader.on('ErrorOccurred', (e) => {
+        console.error('Scanner error:', e);
+        window.parent.postMessage({
+          type: 'error',
+          message: String(e?.error ?? e?.message ?? 'Scanner error')
+        }, '*');
+      });
+
+      reader.on('CommunicationFailed', () => {
+        console.error('Communication failed');
+        window.parent.postMessage({
+          type: 'error',
+          message: 'Communication failed — is DpHostW running?'
+        }, '*');
+      });
+
+      console.log('Reader initialized successfully');
+      window.parent.postMessage({ type: 'ready' }, '*');
+
+    } catch (err) {
+      console.error('initReader error:', err);
+      window.parent.postMessage({ type: 'error', message: err.message }, '*');
+    }
+  }
+
+  // Listen for commands from React
+  window.addEventListener('message', async (e) => {
+    if (!reader) {
+      console.warn('Message received but reader is null:', e.data);
+      return;
+    }
+    try {
+      if (e.data.action === 'startScan') {
+        const fmt = window.dp?.devices?.SampleFormat?.PngImage ?? 5;
+        console.log('Starting acquisition with format:', fmt);
+        await reader.startAcquisition(fmt);
+        console.log('startAcquisition called successfully');
+      }
+      if (e.data.action === 'stopScan') {
+        console.log('Stopping acquisition');
+        await reader.stopAcquisition();
+      }
+    } catch (err) {
+      console.error('Command error:', err);
+      window.parent.postMessage({ type: 'error', message: err.message }, '*');
+    }
+  });
+
+  window.addEventListener('load', initReader);
+</script>
+</body>
+</html>
