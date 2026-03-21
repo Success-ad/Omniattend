@@ -173,13 +173,48 @@ If you want lecturers to self-register, create a `LecturerRegistration.tsx` comp
 
 ---
 
-### Phase 4: Scanning Multiple Students
+### Scanning Multiple Students
 
 **The Process Repeats:**
 
 Student 1: Scan → ✅ "20/2726 - John Doe" → Counter: 1/42
 Student 2: Scan → ✅ "20/2727 - Jane Smith" → Counter: 2/42
 Student 3: Scan → ✅ "20/2728 - Mike Brown" → Counter: 3/42
+
+## Phase 4: Scanning via Biomtrics (fingerprint)
+1. Lecturer navigates to Enroll Students from the dashboard.
+2. Enters student matric number and full name.
+3. System checks `fingerprint_templates` for existing enrollment.
+4. If not enrolled, confirms student details screen shown.
+5. Each student is required to place their finger on the scanner 3 times
+6. Each scan triggers `startAcquisition(SampleFormat.PngImage)` via postMessage
+   - Sample received as base64url PNG string via `SamplesAcquired` event
+   - Quality check: scans with score`quality < 40` (and quality ≠ 0) are rejected
+7. All 3 templates stored in Firestore.
+8. UI progresses through "Scan 1 of 3" → "Scan 2 of 3" → "Scan 3 of 3" → Done.
+
+### How it Works
+1. Receives two base64url-encoded PNG strings via POST.
+2. Converts base64url → standard base64 → Buffer.
+3. Loads both images with Jimp.
+4. Resizes both to 128×128 pixels.
+5. Converts to greyscale.
+6. Computes average pixel brightness for each image.
+7. Builds a binary hash: each pixel is `1` if above average, `0` if below.
+8. Counts matching bits between the two hashes.
+9. Returns `matchingBits / totalBits` as a score between 0 and 1.
+
+## Fingerprint Integration
+
+### Hardware Requirements
+
+| Requirement | Detail |
+|-------------|--------|
+| Scanner model | DigitalPersona U.are.U 4500 |
+| Driver software | HID Authentication Device Client v5.2.0.50 |
+| Windows service | DpHostW.exe must be running |
+| Connection | USB |
+| OS | Windows only |
 
 ## 📊 VIEWING SESSION HISTORY
 
