@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpen, Loader2, LogOut, PlusCircle } from 'lucide-react';
 import SemesterCard from '../Shared/SemesterCard';
 import { getCoursesForLecturer } from '../../services/courseService';
-import { getLecturerProfile, loginLecturer, logoutLecturer } from '../../services/lecturerService';
+import { loginLecturer, logoutLecturer } from '../../services/lecturerService';
 import { getActiveSemester } from '../../services/semesterService';
 import type { Course } from '../../types/course';
 import type { Semester } from '../../types/semester';
@@ -43,14 +43,12 @@ const LecturerDashboard: React.FC<LecturerDashboardProps> = ({
       setError('');
 
       try {
-        const refreshedLecturer = await getLecturerProfile(lecturer.uid);
         const semester = await getActiveSemester();
 
         if (!mounted) {
           return;
         }
 
-        onLecturerChange(refreshedLecturer);
         setActiveSemester(semester);
 
         if (semester) {
@@ -77,7 +75,7 @@ const LecturerDashboard: React.FC<LecturerDashboardProps> = ({
     return () => {
       mounted = false;
     };
-  }, [lecturer]);
+  }, [lecturer?.uid]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();

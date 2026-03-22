@@ -69,7 +69,7 @@ const App: React.FC = () => {
             Omniattend
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Semester-based attendance for admins, lecturers, and students with QR scanning and fingerprint verification preserved.
+            Class attendance, Simplified.
           </p>
         </div>
 
@@ -83,10 +83,10 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Student</h2>
             <p className="text-slate-400 text-sm mb-6">
-              Log in, enroll in semester courses, generate QR codes, and review attendance history.
+              Enroll in semester courses, generate QR codes.
             </p>
             <span className="inline-flex items-center gap-2 text-accent-300">
-              Open portal
+              Login
               <ArrowRight className="w-4 h-4" />
             </span>
           </button>
@@ -100,10 +100,10 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Lecturer</h2>
             <p className="text-slate-400 text-sm mb-6">
-              Create semester courses, launch attendance sessions, and keep QR and biometric scanning in one flow.
+              Create semester courses
             </p>
             <span className="inline-flex items-center gap-2 text-brand-300">
-              Open portal
+              Login
               <ArrowRight className="w-4 h-4" />
             </span>
           </button>
@@ -117,10 +117,10 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Admin</h2>
             <p className="text-slate-400 text-sm mb-6">
-              Create or end semesters, inspect system-wide stats, and archive attendance into historical records.
+              Create or end semesters, inspect system-wide stats.
             </p>
             <span className="inline-flex items-center gap-2 text-emerald-300">
-              Open portal
+              Login
               <ArrowRight className="w-4 h-4" />
             </span>
           </button>
@@ -129,13 +129,15 @@ const App: React.FC = () => {
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm">
           <button
             onClick={() => setCurrentView(View.STUDENT_REGISTRATION)}
-            className="text-accent-300 hover:text-accent-200 underline"
+            className="font-bold text-pink-500 hover:text-pink-600"
+           // className="text-accent-300 hover:text-accent-200 underline"
           >
-            Register as a student
+           Register as a student
           </button>
           <button
             onClick={() => setCurrentView(View.LECTURER_REGISTRATION)}
-            className="text-brand-300 hover:text-brand-200 underline"
+            className="font-bold text-purple-500 hover:text-pink-600"
+            //className="text-brand-300 hover:text-brand-200 underline"
           >
             Register as a lecturer
           </button>

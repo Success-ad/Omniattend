@@ -23,7 +23,7 @@ export interface RegisterStudentInput {
   lastName: string;
   matricNumber: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   password: string;
   department: string;
   level: string;
@@ -115,7 +115,7 @@ export const registerStudent = async (input: RegisterStudentInput) => {
     fullName: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
     matricNumber: input.matricNumber.trim().toUpperCase(),
     email: input.email.trim().toLowerCase(),
-    phoneNumber: input.phoneNumber.trim(),
+    phoneNumber: input.phoneNumber?.trim() ?? '',
     department: input.department.trim(),
     level: input.level.trim(),
     enrolledCourses: [],

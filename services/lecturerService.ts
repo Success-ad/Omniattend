@@ -22,7 +22,7 @@ export interface RegisterLecturerInput {
   email: string;
   password: string;
   department: string;
-  phoneNumber: string;
+  phoneNumber?: string;
 }
 
 const mapLecturerProfile = (id: string, data: Record<string, any>): LecturerProfile => ({
@@ -76,7 +76,7 @@ export const registerLecturer = async (input: RegisterLecturerInput) => {
     fullName: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
     email: input.email.trim().toLowerCase(),
     department: input.department.trim(),
-    phoneNumber: input.phoneNumber.trim(),
+    phoneNumber: input.phoneNumber?.trim() ?? '',
     createdCourses: [],
     role: 'lecturer',
     isActive: true,

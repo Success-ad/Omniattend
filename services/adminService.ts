@@ -10,7 +10,12 @@ import {
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from './firebaseClient';
 import { assertRoleAccess } from './roleService';
-import { createSemester, getActiveSemester, getSemesterById } from './semesterService';
+import {
+  createSemester,
+  getActiveSemester,
+  getAllSemesters,
+  getSemesterById,
+} from './semesterService';
 import type { Course } from '../types/course';
 import type {
   AttendanceHistoryEntry,
@@ -123,12 +128,12 @@ export const logoutAdmin = async () => {
 };
 
 export const getAdminDashboardData = async () => {
-  const [studentsSnapshot, lecturersSnapshot, coursesSnapshot, semestersSnapshot] =
+  const [studentsSnapshot, lecturersSnapshot, coursesSnapshot, semesters] =
     await Promise.all([
       getDocs(collection(db, 'students')),
       getDocs(collection(db, 'lecturers')),
       getDocs(collection(db, 'courses')),
-      getDocs(collection(db, 'semesters')),
+      getAllSemesters(),
     ]);
 
   const students = studentsSnapshot.docs.map((studentDoc) =>
@@ -140,10 +145,6 @@ export const getAdminDashboardData = async () => {
   const courses = coursesSnapshot.docs.map((courseDoc) =>
     mapCourse(courseDoc.id, courseDoc.data())
   );
-  const semesters = semestersSnapshot.docs.map((semesterDoc) => ({
-    id: semesterDoc.id,
-    ...semesterDoc.data(),
-  }));
   const activeSemester = semesters.find((semester) => semester.is_active) ?? null;
 
   return {

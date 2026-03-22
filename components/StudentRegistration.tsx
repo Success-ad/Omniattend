@@ -110,9 +110,6 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
             <UserPlus className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Student Registration</h1>
-          <p className="text-slate-400">
-            Registration no longer asks for courses up front. Create your account first, then enroll per semester from your dashboard.
-          </p>
         </div>
 
         {error ? (
@@ -189,7 +186,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({
             value={form.phoneNumber}
             onChange={handleChange}
             className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3.5 text-white"
-            placeholder="Phone number"
+            placeholder="Phone number (optional)"
           />
 
           <div className="grid gap-4 sm:grid-cols-2">

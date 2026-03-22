@@ -45,9 +45,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onLogin }) => {
             <ShieldCheck className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Admin Access</h1>
-          <p className="text-slate-400">
-            Sign in with an admin account created in Firebase Authentication and Firestore.
-          </p>
         </div>
 
         {error ? (
@@ -66,7 +63,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onLogin }) => {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3.5 text-white outline-none focus:border-brand-500"
-              placeholder="admin@school.edu"
+              placeholder="admin@omniattend.com"
               required
             />
           </div>

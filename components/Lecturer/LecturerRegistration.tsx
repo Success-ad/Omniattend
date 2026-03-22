@@ -80,9 +80,6 @@ const LecturerRegistration: React.FC<LecturerRegistrationProps> = ({
             <GraduationCap className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Lecturer Registration</h1>
-          <p className="text-slate-400">
-            Create a lecturer account and start managing semester courses immediately.
-          </p>
         </div>
 
         {error ? (
@@ -135,8 +132,7 @@ const LecturerRegistration: React.FC<LecturerRegistrationProps> = ({
               value={form.phoneNumber}
               onChange={handleChange}
               className="rounded-2xl bg-white/5 border border-white/10 px-4 py-3.5 text-white"
-              placeholder="Phone number"
-              required
+              placeholder="Phone number (optional)"
             />
           </div>
 
