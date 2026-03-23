@@ -186,7 +186,7 @@ class FingerprintService {
 
     console.log(`[FP] Best match: ${bestMatch.studentName} at ${(bestMatch.similarity * 100).toFixed(1)}%`);
 
-    if (bestMatch.similarity > 0.80) {
+    if (bestMatch.similarity > 0.60) {
       return {
         matched: true,
         studentId: bestMatch.studentId,
