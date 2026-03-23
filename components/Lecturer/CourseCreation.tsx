@@ -114,7 +114,7 @@ const CourseCreation: React.FC<CourseCreationProps> = ({
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Create Course</h1>
           <p className="text-slate-400">
-            Courses are always created inside the active semester. Your department is pre-filled, but you can override it for cross-department teaching.
+            Courses are always created inside the active semester.
           </p>
         </div>
 

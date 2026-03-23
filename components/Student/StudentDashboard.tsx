@@ -383,9 +383,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     <p className="text-3xl font-bold text-white">{student.attendance_history.length}</p>
                   </div>
                 </div>
-                <div className="mt-4 rounded-2xl bg-brand-500/10 border border-brand-500/15 p-4 text-sm text-brand-100">
-                  QR codes are tied to your live enrollments, so dropping a course immediately removes QR access for that course.
-                </div>
               </div>
             </div>
           </div>

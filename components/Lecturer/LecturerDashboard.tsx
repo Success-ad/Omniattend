@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, BookOpen, Loader2, LogOut, PlusCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookOpen,
+  Fingerprint,
+  Loader2,
+  LogOut,
+  PlusCircle,
+} from 'lucide-react';
 import SemesterCard from '../Shared/SemesterCard';
 import { getCoursesForLecturer } from '../../services/courseService';
 import { loginLecturer, logoutLecturer } from '../../services/lecturerService';
@@ -13,6 +20,7 @@ interface LecturerDashboardProps {
   onLecturerChange: (lecturer: LecturerProfile | null) => void;
   onBack: () => void;
   onCreateCourse: () => void;
+  onOpenFingerprintEnrollment: () => void;
   onOpenMyCourses: () => void;
 }
 
@@ -21,6 +29,7 @@ const LecturerDashboard: React.FC<LecturerDashboardProps> = ({
   onLecturerChange,
   onBack,
   onCreateCourse,
+  onOpenFingerprintEnrollment,
   onOpenMyCourses,
 }) => {
   const [email, setEmail] = useState('');
@@ -199,7 +208,7 @@ const LecturerDashboard: React.FC<LecturerDashboardProps> = ({
           <div className="space-y-6">
             <SemesterCard
               semester={activeSemester}
-              subtitle="Create courses inside the active semester. Your department is used as the default but you can still support cross-department courses."
+              subtitle="Create courses inside the active semester."
             />
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -250,6 +259,19 @@ const LecturerDashboard: React.FC<LecturerDashboardProps> = ({
                     </div>
                     <p className="text-sm text-slate-400">
                       Open course dashboards and jump into attendance scanning.
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={onOpenFingerprintEnrollment}
+                    className="w-full rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-left text-white"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <Fingerprint className="w-5 h-5 text-emerald-300" />
+                      <span className="font-semibold">Register Fingerprint</span>
+                    </div>
+                    <p className="text-sm text-emerald-100/80">
+                      Capture student fingerprints for biometric attendance.
                     </p>
                   </button>
                 </div>

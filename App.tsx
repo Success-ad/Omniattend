@@ -31,6 +31,7 @@ enum View {
   STUDENT_QR = 'STUDENT_QR',
   LECTURER_REGISTRATION = 'LECTURER_REGISTRATION',
   LECTURER_DASHBOARD = 'LECTURER_DASHBOARD',
+  LECTURER_FINGERPRINT_ENROLLMENT = 'LECTURER_FINGERPRINT_ENROLLMENT',
   LECTURER_CREATE_COURSE = 'LECTURER_CREATE_COURSE',
   LECTURER_MY_COURSES = 'LECTURER_MY_COURSES',
   LECTURER_SCANNER = 'LECTURER_SCANNER',
@@ -73,58 +74,78 @@ const App: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <button
-            onClick={() => setCurrentView(View.STUDENT_DASHBOARD)}
-            className="glass-panel hover:bg-white/5 p-6 rounded-3xl transition-all duration-300 text-left"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-accent-500/20 text-accent-300 flex items-center justify-center mb-5">
-              <BookUser className="w-7 h-7" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Student</h2>
-            <p className="text-slate-400 text-sm mb-6">
-              Enroll in semester courses, generate QR codes.
-            </p>
-            <span className="inline-flex items-center gap-2 text-accent-300">
-              Login
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </button>
+  <div className="max-w-lg mx-auto space-y-6">
 
-          <button
-            onClick={() => setCurrentView(View.LECTURER_DASHBOARD)}
-            className="glass-panel hover:bg-white/5 p-6 rounded-3xl transition-all duration-300 text-left"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-brand-500/20 text-brand-300 flex items-center justify-center mb-5">
-              <GraduationCap className="w-7 h-7" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Lecturer</h2>
-            <p className="text-slate-400 text-sm mb-6">
-              Create semester courses
-            </p>
-            <span className="inline-flex items-center gap-2 text-brand-300">
-              Login
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </button>
+  {/* Student */}
+  <button
+    onClick={() => setCurrentView(View.STUDENT_DASHBOARD)}
+    className="glass-panel w-full flex items-center justify-between p-6 rounded-3xl transition-all duration-300 hover:bg-white/5 text-left"
+  >
+    <div className="flex items-center gap-5">
+      <div className="w-14 h-14 rounded-2xl bg-accent-500/20 text-accent-300 flex items-center justify-center">
+        <BookUser className="w-7 h-7" />
+      </div>
 
-          <button
-            onClick={() => setCurrentView(View.ADMIN_LOGIN)}
-            className="glass-panel hover:bg-white/5 p-6 rounded-3xl transition-all duration-300 text-left"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center mb-5">
-              <CalendarDays className="w-7 h-7" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Admin</h2>
-            <p className="text-slate-400 text-sm mb-6">
-              Create or end semesters, inspect system-wide stats.
-            </p>
-            <span className="inline-flex items-center gap-2 text-emerald-300">
-              Login
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </button>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-1">Student</h2>
+        <p className="text-slate-400 text-sm">
+          Enroll in semester courses, generate QR codes.
+        </p>
+      </div>
+    </div>
+
+    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+      <ArrowRight className="w-4 h-4 text-white" />
+    </div>
+  </button>
+
+  {/* Lecturer */}
+  <button
+    onClick={() => setCurrentView(View.LECTURER_DASHBOARD)}
+    className="glass-panel w-full flex items-center justify-between p-6 rounded-3xl transition-all duration-300 hover:bg-white/5 text-left"
+  >
+    <div className="flex items-center gap-5">
+      <div className="w-14 h-14 rounded-2xl bg-brand-500/20 text-brand-300 flex items-center justify-center">
+        <GraduationCap className="w-7 h-7" />
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-1">Lecturer</h2>
+        <p className="text-slate-400 text-sm">
+          Create semester courses
+        </p>
+      </div>
+    </div>
+
+    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+      <ArrowRight className="w-4 h-4 text-white" />
+    </div>
+  </button>
+
+  {/* Admin */}
+  <button
+    onClick={() => setCurrentView(View.ADMIN_LOGIN)}
+    className="glass-panel w-full flex items-center justify-between p-6 rounded-3xl transition-all duration-300 hover:bg-white/5 text-left"
+  >
+    <div className="flex items-center gap-5">
+      <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
+        <CalendarDays className="w-7 h-7" />
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-1">Admin</h2>
+        <p className="text-slate-400 text-sm">
+          Create or end semesters, inspect system-wide stats.
+        </p>
+      </div>
+    </div>
+
+    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+      <ArrowRight className="w-4 h-4 text-white" />
+    </div>
+  </button>
+
+</div>
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm">
           <button
@@ -269,6 +290,38 @@ const App: React.FC = () => {
             onLecturerChange={setLecturerSession}
             onBack={goHome}
             onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
+            onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
+          />
+        </div>
+      );
+
+    case View.LECTURER_FINGERPRINT_ENROLLMENT:
+      return lecturerSession ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerScanner
+            onBack={() => setCurrentView(View.LECTURER_DASHBOARD)}
+            initialLecturer={lecturerSession}
+            initialMode="enroll"
+            onLecturerLogout={() => {
+              setLecturerSession(null);
+              setSelectedLecturerCourse(null);
+              setCurrentView(View.LECTURER_DASHBOARD);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerDashboard
+            lecturer={lecturerSession}
+            onLecturerChange={setLecturerSession}
+            onBack={goHome}
+            onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
             onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
           />
         </div>
@@ -291,6 +344,9 @@ const App: React.FC = () => {
             onLecturerChange={setLecturerSession}
             onBack={goHome}
             onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
             onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
           />
         </div>
@@ -316,6 +372,9 @@ const App: React.FC = () => {
             onLecturerChange={setLecturerSession}
             onBack={goHome}
             onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
             onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
           />
         </div>
@@ -328,6 +387,11 @@ const App: React.FC = () => {
             onBack={() => setCurrentView(View.LECTURER_MY_COURSES)}
             initialLecturer={lecturerSession}
             initialCourse={selectedLecturerCourse}
+            onLecturerLogout={() => {
+              setLecturerSession(null);
+              setSelectedLecturerCourse(null);
+              setCurrentView(View.LECTURER_DASHBOARD);
+            }}
           />
         </div>
       ) : (
@@ -337,6 +401,9 @@ const App: React.FC = () => {
             onLecturerChange={setLecturerSession}
             onBack={goHome}
             onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
             onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
           />
         </div>

@@ -91,6 +91,8 @@ interface LecturerScannerProps {
   onBack: () => void;
   initialLecturer?: LecturerProfile | null;
   initialCourse?: Course | null;
+  initialMode?: 'default' | 'enroll';
+  onLecturerLogout?: () => void;
 }
 
 // Semester-aware scanner bridge: dashboard-selected Firestore courses are mapped into the existing scanner UI shape.
@@ -114,12 +116,22 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({
   onBack,
   initialLecturer = null,
   initialCourse = null,
+  initialMode = 'default',
+  onLecturerLogout,
 }) => {
   const initialScannerCourse = initialCourse ? mapCourseToScannerCourse(initialCourse) : null;
+  const openFingerprintEnrollment =
+    initialMode === 'enroll' && Boolean(initialLecturer) && !initialScannerCourse;
 
   // ── Auth & Navigation ──
   const [step, setStep]           = useState<LecturerStep>(
-    initialScannerCourse ? LecturerStep.COURSE_DASHBOARD : initialLecturer ? LecturerStep.SELECT : LecturerStep.AUTH
+    openFingerprintEnrollment
+      ? LecturerStep.ENROLL
+      : initialScannerCourse
+        ? LecturerStep.COURSE_DASHBOARD
+        : initialLecturer
+          ? LecturerStep.SELECT
+          : LecturerStep.AUTH
   );
   const [lecturerId, setLecturerId] = useState(initialLecturer?.email ?? '');
   const [password, setPassword]   = useState('');
@@ -220,9 +232,13 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({
         processingStudentIdsRef.current.clear();
         break;
       case LecturerStep.ENROLL:
-      resetEnroll();
-      setStep(initialScannerCourse ? LecturerStep.COURSE_DASHBOARD : LecturerStep.SELECT);
-      break;
+        resetEnroll();
+        if (openFingerprintEnrollment) {
+          onBack();
+        } else {
+          setStep(initialScannerCourse ? LecturerStep.COURSE_DASHBOARD : LecturerStep.SELECT);
+        }
+        break;
       case LecturerStep.MODE_SELECT:
       case LecturerStep.CREATE_SESSION:
       case LecturerStep.HISTORY:
@@ -252,7 +268,9 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({
     setLecturerId('');
     setPassword('');
     setSelectedCourse(null);
-    if (initialLecturer) {
+    if (onLecturerLogout) {
+      onLecturerLogout();
+    } else if (initialLecturer) {
       onBack();
     } else {
       setStep(LecturerStep.AUTH);
@@ -265,7 +283,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({
     e.preventDefault();
     try {
       await loginLecturer(lecturerId, password);
-      setStep(LecturerStep.SELECT);
+      setStep(openFingerprintEnrollment ? LecturerStep.ENROLL : LecturerStep.SELECT);
     } catch {
       alert('Invalid credentials');
     }
