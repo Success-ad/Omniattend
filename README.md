@@ -1,250 +1,163 @@
-# Omniattend
-an attendance system for students and lecturers
+# OmniAttend - University Attendance System
 
-# Omniattend - Complete Flow Explanation
+**Version 2.0**
+A complete semester-based attendance management system with **QR code + biometric fingerprint** verification.
 
-## 🎓 How The System Works - Step by Step
+---
+
+## 🎯 System Overview
+
+OmniAttend is a modern university attendance system that supports **three user roles**:
+
+- **Students** – Self-register, browse & enroll in courses, generate QR codes, view attendance history
+- **Lecturers** – Self-register, create & manage courses, start attendance sessions, mark attendance (QR or fingerprint), enroll student fingerprints
+- **Administrators** – Manage semesters, end/archive semesters, view system statistics
+
+**Core Features**
+- Semester-based course management (only **one active semester** at a time)
+- Student self-enrollment (no course selection during signup)
+- Dual attendance verification: QR code **or** fingerprint
+- Department-filtered course browsing
+- Real-time attendance logging
+- Automatic historical archiving when a semester ends
 
 ---
 
 ## 📱 STUDENT FLOW
 
 ### Step 1: Registration (One-Time)
-**What Happens:**
-1. Student clicks "Register as a student" (at bottom of landing page)
-2. Fills in personal info:
+1. On the landing page, click **"Register as Student"**
+2. Fill in:
+   - Matric Number (e.g. `20/2726`)
    - First & Last Name
-   - Matric Number (e.g., 20/2726)
    - Email
-   - Phone (optional)
-   - Department
-   - Level (100-500)
    - Password
-3. Selects courses they're enrolled in (CS-404, CS-302, etc.)
-4. Clicks "Complete Registration"
+   - Department
+   - Level (100–500)
+3. **No courses are selected here** — enrollment happens later.
 
-### Step 2: Daily Login & QR Generation
-**What Happens:**
-1. Student clicks "Student" on landing page
-2. Enters matric number: `20/2726`
-3. Enters password
-4. Student is authenticated via Firebase
-5. Selects the course they're attending TODAY (e.g., "Network Security")
-6. A QR code is generated containing the students details
+### Step 2: Login & Course Enrollment
+1. Click **"Student"** → Login with matric number + password
+2. You will see the **current active semester**
+3. Browse available courses:
+   - Default filter = your department
+   - You can switch to any other department
+4. Click **"Enroll"** on any course you want
+5. Courses now appear in **"My Enrolled Courses"**
 
-**Important:** 
-- QR code refreshes every 60 seconds (new nonce each time)
-- Student shows this QR to lecturer's scanner
-- QR contains NO sensitive data (no password, no email)
+### Step 3: Generate QR Code for Attendance
+1. Go to **"My Enrolled Courses"**
+2. Select the course you are attending today
+3. Click **"Generate QR Code"**
+4. Show the QR to your lecturer (refreshes automatically every 60 seconds for security)
+
+---
 
 ## 👨‍🏫 LECTURER FLOW
 
-### Option A: Manual Lecturer Account (Recommended for Testing)
+### Step 1: Self-Registration (No manual Firebase setup needed)
+1. On the landing page, click **"Register as Lecturer"**
+2. Fill in:
+   - First & Last Name
+   - Email
+   - Password
+   - Department
+   - Phone Number
+3. Account is **immediately activated**
 
-**You DON'T need a registration system for lecturers.** Just add them manually in Firebase:
+### Step 2: Create a Course (in active semester only)
+1. Login as Lecturer
+2. Go to **"My Courses"**
+3. Click **"Create New Course"**
+4. Fill in:
+   - Course Code (e.g. `CS-404`)
+   - Course Name
+   - Description
+   - Department (pre-filled from your profile)
+5. Course is now visible to students in the current semester
 
-#### How to Add Lecturers Manually:
+### Step 3: Start an Attendance Session
+1. From **"My Courses"**, select a course
+2. Click **"Start Attendance Session"**
+3. Enter:
+   - Session Name (e.g. "Lecture 5: Memory Management")
+   - Date (auto-filled)
+4. Choose scanning mode:
+   - **QR Code Camera** 📷 (students show their phone)
+   - **Fingerprint Scanner** 👆 (hardware required)
 
-**Method 1: Firebase Console (GUI)**
-1. Go to Firebase Console → Authentication
-2. Click "Add user"
-3. Email: `lecturer@university.edu`
-4. Password: `LecturerPass123`
-5. Create user
-6. Go to Firestore Database
-7. Create collection: `lecturers`
-8. Add document:
-```javascript
-{
-  uid: "copy_firebase_uid_here",
-  firstName: "Dr. Sarah",
-  lastName: "Johnson",
-  email: "lecturer@university.edu",
-  department: "Computer Science",
-  courses: ["CS-404", "CS-302"],
-  createdAt: "2025-02-15T...",
-  isActive: true
-}
-```
+### Step 4: Mark Attendance
 
-**Method 2: Firebase Admin SDK (Programmatic)**
-```javascript
-// Script to add lecturers (run once)
-import { db } from './firebaseClient';
-import { collection, addDoc } from 'firebase/firestore';
+#### Option A: QR Code Mode
+- Point camera at student’s generated QR code
+- System automatically:
+  - Validates enrollment
+  - Prevents duplicates
+  - Logs attendance with `method: "qr"`
 
-await addDoc(collection(db, 'lecturers'), {
-  firstName: "Dr. Sarah",
-  lastName: "Johnson",
-  lecturerId: "LEC-001",
-  email: "lecturer@university.edu",
-  department: "Computer Science",
-  courses: ["CS-404", "CS-302"],
-  createdAt: new Date().toISOString(),
-  isActive: true
-});
-```
-
----
-
-### Option B: Create Lecturer Registration (Similar to Students)
-
-If you want lecturers to self-register, create a `LecturerRegistration.tsx` component (similar to StudentRegistration).
-
-## 🎯 ATTENDANCE PROCESS
-
-### Phase 1: Lecturer Creates Session
-
-**What Happens:**
-1. Lecturer clicks "Lecturer" on landing page
-2. Logs in with:
-   - Email: 'lecturer@babcock.com'
-   - Password: (their password) //123456
-3. Selects course: e.g "Network Security (CS-404)"
-4. Clicks "Start Scanner"
-5. Fills in session details:
-   - Session Name: "Lecture: Network Security"
-   - Date: 2025-02-15
-   - Description: "Chapter 5: Cryptography"
-6. Clicks "Start Scanning Session"
-
-### Phase 2: Lecturer Chooses Scanning Mode
-
-**Two Options:**
-
-#### Option A: QR Code Camera 📷
-- Uses device camera
-- Scans student-generated QR codes
-- Good for classes where students have phones
-
-#### Option B: Biometric System 👆
-- Uses physical barcode/fingerprint scanner
-- Students scan their ID cards or fingerprints
-- Good for hardware-based attendance
+#### Option B: Fingerprint Mode
+- System switches to biometric mode
+- Students place finger on the **DigitalPersona U.are.U 4500** scanner
+- System compares against enrolled templates (threshold 80% similarity)
+- Logs attendance with `method: "fingerprint"`
 
 ---
 
-### Phase 3: Scanning Students (QR Mode)
+##  ADMINISTRATOR FLOW
 
-**What Happens When Lecturer Scans Student QR:**
-
-1. **Student shows QR on phone**
-   ```
-   Student: "Here's my QR code"
-   [QR Code displayed on phone]
-   ```
-
-2. **Lecturer points camera at QR**
-   ```
-   Camera reads QR → Extracts data:
-   {
-     studentId: "20/2726",
-     studentName: "John Doe",
-     courseId: "CS-404",
-     timestamp: 1708012345678,
-     nonce: "abc123..."
-   }
-
-3. **App Validates QR Code:**
-
-4. **App Saves Attendance:**
-   ```javascript
-   // Firebase Collection: attendance_logs/{logId}
-   {
-     class_id: "CS-404-lx8k9m", // Session ID
-     student_id: "20/2726",
-     matric_number: "20/2726",
-     student_name: "John Doe",
-     nonce: "abc123...",
-     timestamp: "",
-     marked_at: Firebase.Timestamp.now()
-   }
-5. **Visual Feedback:**
-   ```
-   Screen shows:
-   ✅ Green flash
-   ✅ "John Doe marked present"
-   ✅ Counter updates: 1/42 students
-   ✅ Student appears in sidebar list
-   ```
-
-6. **Student sees confirmation on their end** (optional feature)
-   - Could add notification: "✅ Attendance marked!"
+1. Login as Admin (created manually in Firebase)
+2. **Create New Semester**
+   - Semester ID: e.g. `2025/26.1`
+   - Name, start & end dates
+3. **End Semester** (one-click process):
+   - Automatically archives all enrollments
+   - Calculates attendance percentages
+   - Moves data to student `attendance_history`
+   - Clears current enrollments for next semester
 
 ---
 
-### Scanning Multiple Students
+## 🔬 Fingerprint Enrollment (Lecturer → Student)
 
-**The Process Repeats:**
+1. Lecturer goes to **"Enroll Students"** in course dashboard
+2. Enters student **matric number**
+3. If not enrolled:
+   - Student places finger **3 times** on scanner
+   - Each scan captured as base64 PNG (~165 KB)
+   - Quality validated automatically
+4. Templates stored in `fingerprint_templates` collection
+5. Student is now ready for biometric attendance
 
-Student 1: Scan → ✅ "20/2726 - John Doe" → Counter: 1/42
-Student 2: Scan → ✅ "20/2727 - Jane Smith" → Counter: 2/42
-Student 3: Scan → ✅ "20/2728 - Mike Brown" → Counter: 3/42
+---
 
-## Phase 4: Scanning via Biomtrics (fingerprint)
-1. Lecturer navigates to Enroll Students from the dashboard.
-2. Enters student matric number and full name.
-3. System checks `fingerprint_templates` for existing enrollment.
-4. If not enrolled, confirms student details screen shown.
-5. Each student is required to place their finger on the scanner 3 times
-6. Each scan triggers `startAcquisition(SampleFormat.PngImage)` via postMessage
-   - Sample received as base64url PNG string via `SamplesAcquired` event
-   - Quality check: scans with score`quality < 40` (and quality ≠ 0) are rejected
-7. All 3 templates stored in Firestore.
-8. UI progresses through "Scan 1 of 3" → "Scan 2 of 3" → "Scan 3 of 3" → Done.
+## 📊 Key Concepts You Should Know
 
-### How it Works
-1. Receives two base64url-encoded PNG strings via POST.
-2. Converts base64url → standard base64 → Buffer.
-3. Loads both images with Jimp.
-4. Resizes both to 128×128 pixels.
-5. Converts to greyscale.
-6. Computes average pixel brightness for each image.
-7. Builds a binary hash: each pixel is `1` if above average, `0` if below.
-8. Counts matching bits between the two hashes.
-9. Returns `matchingBits / totalBits` as a score between 0 and 1.
+| Concept              | Description |
+|----------------------|-----------|
+| **Active Semester**  | Only **one** semester can be active at a time |
+| **Course Enrollment**| Students enroll themselves after registration |
+| **Sessions**         | Created by lecturers per lecture/date |
+| **Attendance Logs**  | Stored with method (`qr` or `fingerprint`) |
+| **History**          | Automatically archived when semester ends |
 
-## Fingerprint Integration
+---
 
-### Hardware Requirements
+## 🛠 Technology Stack (Quick Reference)
 
-| Requirement | Detail |
-|-------------|--------|
-| Scanner model | DigitalPersona U.are.U 4500 |
-| Driver software | HID Authentication Device Client v5.2.0.50 |
-| Windows service | DpHostW.exe must be running |
-| Connection | USB |
-| OS | Windows only |
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind
+- **Backend**: Firebase Firestore + Firebase Auth
+- **Biometrics**: DigitalPersona U.are.U 4500 + DpHostW.exe (Windows only)
+- **Local Server**: Node.js fingerprint compare service (port 3002)
 
-## 📊 VIEWING SESSION HISTORY
+---
 
-### How History Works:
+##  Quick Start for Developers / Testers
 
-**What Happens:**
-1. Lecturer logs in
-2. Selects course: "Network Security (CS-404)"
-3. Clicks "Session History"
+1. Make sure:
+   - Firebase project is configured
+   - `DpHostW.exe` and scanner drivers are running (for fingerprint)
+   - Local compare server is running on port 3002
+2. `npm install && npm run dev`
 
-**What Gets Displayed:**
 
-// Firebase Query:
-SELECT * FROM sessions 
-WHERE course_id = 'CS-404' 
-ORDER BY created_at DESC
-
-// Results shown:
-[
-  {
-    name: "Lecture: Network Security",
-    description: "Chapter 5: Cryptography",
-    date: "2025-02-15",
-    created_at: "2025-02-15T14:00:00Z"
-  },
-  {
-    name: "Lecture: Network Security",
-    description: "Chapter 4: Network Protocols",
-    date: "2025-02-12",
-    created_at: "2025-02-12T14:00:00Z"
-  },
-   **You can click on each session to view the students present at that attendance session taken**
-]
+**OmniAttend v2.0** — Semester-based, dual-authentication attendance system built for universities.
