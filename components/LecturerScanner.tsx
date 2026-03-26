@@ -8,17 +8,33 @@ import {
   FileText, Type, LogOut, Check, X, Camera, History, UserCheck, Fingerprint,
   QrCode as QrCodeIcon, UserPlus, Search, CheckCircle2, AlertCircle, WifiOff, Loader2
 } from 'lucide-react';
+import type { Course } from '../types/course';
+import type { LecturerProfile } from '../types/user';
 
 
-const AVAILABLE_COURSES = [
-  { id: 'CS-404', name: 'Network Security',   desc: 'Protocol Analysis',              totalStudents: 42 },
-  { id: 'CS-302', name: 'Algorithms II',       desc: 'Data Structures',                totalStudents: 82 },
-  { id: 'ETH-101', name: 'Cyber Ethics',       desc: 'Legal Frameworks',               totalStudents: 35 },
-  { id: 'CS-402', name: 'Kernel Arch',         desc: 'System Design',                  totalStudents: 18 },
-  { id: 'CS-309', name: 'Intro to AI',         desc: 'Machine Learning Basics',        totalStudents: 25 },
-  { id: 'CS-410', name: 'Cloud Security',      desc: 'Securing Cloud Infrastructures', totalStudents: 30 },
-  { id: 'CS-305', name: 'Database Systems',    desc: 'SQL & NoSQL Databases',          totalStudents: 40 },
-  { id: 'CS-315', name: 'Web Dev',             desc: 'Full Stack Development',         totalStudents: 38 },
+interface ScannerCourse {
+  id: string;
+  name: string;
+  desc: string;
+  totalStudents: number;
+  courseCode: string;
+  courseName: string;
+  department?: string;
+  semesterId?: string;
+  semesterName?: string;
+  lecturerId?: string;
+  lecturerName?: string;
+}
+
+const AVAILABLE_COURSES: ScannerCourse[] = [
+  { id: 'CS-404', name: 'Network Security',   desc: 'Protocol Analysis',              totalStudents: 42, courseCode: 'CS-404', courseName: 'Network Security' },
+  { id: 'CS-302', name: 'Algorithms II',       desc: 'Data Structures',                totalStudents: 82, courseCode: 'CS-302', courseName: 'Algorithms II' },
+  { id: 'ETH-101', name: 'Cyber Ethics',       desc: 'Legal Frameworks',               totalStudents: 35, courseCode: 'ETH-101', courseName: 'Cyber Ethics' },
+  { id: 'CS-402', name: 'Kernel Arch',         desc: 'System Design',                  totalStudents: 18, courseCode: 'CS-402', courseName: 'Kernel Arch' },
+  { id: 'CS-309', name: 'Intro to AI',         desc: 'Machine Learning Basics',        totalStudents: 25, courseCode: 'CS-309', courseName: 'Intro to AI' },
+  { id: 'CS-410', name: 'Cloud Security',      desc: 'Securing Cloud Infrastructures', totalStudents: 30, courseCode: 'CS-410', courseName: 'Cloud Security' },
+  { id: 'CS-305', name: 'Database Systems',    desc: 'SQL & NoSQL Databases',          totalStudents: 40, courseCode: 'CS-305', courseName: 'Database Systems' },
+  { id: 'CS-315', name: 'Web Dev',             desc: 'Full Stack Development',         totalStudents: 38, courseCode: 'CS-315', courseName: 'Web Dev' },
 ];
 
 
@@ -55,9 +71,12 @@ type BioPhase =
 
 interface StudentQRPayload {
   studentId: string;
+  studentUid?: string;
   studentName?: string;
   courseId: string;
+  courseCode?: string;
   courseName: string;
+  semesterId?: string;
   timestamp: number;
   nonce: string;
 }
@@ -70,17 +89,53 @@ interface AttendanceRecord {
 
 interface LecturerScannerProps {
   onBack: () => void;
+  initialLecturer?: LecturerProfile | null;
+  initialCourse?: Course | null;
+  initialMode?: 'default' | 'enroll';
+  onLecturerLogout?: () => void;
 }
+
+// Semester-aware scanner bridge: dashboard-selected Firestore courses are mapped into the existing scanner UI shape.
+const mapCourseToScannerCourse = (course: Course): ScannerCourse => ({
+  id: course.id,
+  name: course.course_name,
+  desc: course.description || course.department,
+  totalStudents: course.enrolled_count,
+  courseCode: course.course_code,
+  courseName: course.course_name,
+  department: course.department,
+  semesterId: course.semester_id,
+  semesterName: course.semester_name,
+  lecturerId: course.lecturer_id,
+  lecturerName: course.lecturer_name,
+});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
+const LecturerScanner: React.FC<LecturerScannerProps> = ({
+  onBack,
+  initialLecturer = null,
+  initialCourse = null,
+  initialMode = 'default',
+  onLecturerLogout,
+}) => {
+  const initialScannerCourse = initialCourse ? mapCourseToScannerCourse(initialCourse) : null;
+  const openFingerprintEnrollment =
+    initialMode === 'enroll' && Boolean(initialLecturer) && !initialScannerCourse;
 
   // ── Auth & Navigation ──
-  const [step, setStep]           = useState<LecturerStep>(LecturerStep.AUTH);
-  const [lecturerId, setLecturerId] = useState('');
+  const [step, setStep]           = useState<LecturerStep>(
+    openFingerprintEnrollment
+      ? LecturerStep.ENROLL
+      : initialScannerCourse
+        ? LecturerStep.COURSE_DASHBOARD
+        : initialLecturer
+          ? LecturerStep.SELECT
+          : LecturerStep.AUTH
+  );
+  const [lecturerId, setLecturerId] = useState(initialLecturer?.email ?? '');
   const [password, setPassword]   = useState('');
-  const [selectedCourse, setSelectedCourse] = useState<typeof AVAILABLE_COURSES[0] | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<ScannerCourse | null>(initialScannerCourse);
 
   // ── Session ──
   const [sessionName, setSessionName]   = useState('');
@@ -107,7 +162,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
   const scannedNoncesRef          = useRef<Set<string>>(new Set());
   const processingNoncesRef       = useRef<Set<string>>(new Set());
   const processingStudentIdsRef   = useRef<Set<string>>(new Set());
-  const selectedCourseRef         = useRef<typeof AVAILABLE_COURSES[0] | null>(null);
+  const selectedCourseRef         = useRef<ScannerCourse | null>(initialScannerCourse);
   const activeSessionIdRef        = useRef<string>('');
 
   // ── Biometric Attendance ──
@@ -177,19 +232,31 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
         processingStudentIdsRef.current.clear();
         break;
       case LecturerStep.ENROLL:
-      resetEnroll();
-      setStep(LecturerStep.SELECT);
-      break;
+        resetEnroll();
+        if (openFingerprintEnrollment) {
+          onBack();
+        } else {
+          setStep(initialScannerCourse ? LecturerStep.COURSE_DASHBOARD : LecturerStep.SELECT);
+        }
+        break;
       case LecturerStep.MODE_SELECT:
       case LecturerStep.CREATE_SESSION:
       case LecturerStep.HISTORY:
         setStep(LecturerStep.COURSE_DASHBOARD);
         break;
       case LecturerStep.COURSE_DASHBOARD:
-        setStep(LecturerStep.SELECT);
+        if (initialScannerCourse || initialLecturer) {
+          onBack();
+        } else {
+          setStep(LecturerStep.SELECT);
+        }
         break;
       case LecturerStep.SELECT:
-        setStep(LecturerStep.AUTH);
+        if (initialLecturer) {
+          onBack();
+        } else {
+          setStep(LecturerStep.AUTH);
+        }
         break;
       default:
         onBack();
@@ -201,7 +268,13 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
     setLecturerId('');
     setPassword('');
     setSelectedCourse(null);
-    setStep(LecturerStep.AUTH);
+    if (onLecturerLogout) {
+      onLecturerLogout();
+    } else if (initialLecturer) {
+      onBack();
+    } else {
+      setStep(LecturerStep.AUTH);
+    }
   };
 
   // Auth
@@ -210,7 +283,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
     e.preventDefault();
     try {
       await loginLecturer(lecturerId, password);
-      setStep(LecturerStep.SELECT);
+      setStep(openFingerprintEnrollment ? LecturerStep.ENROLL : LecturerStep.SELECT);
     } catch {
       alert('Invalid credentials');
     }
@@ -225,7 +298,7 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
 
   const handleStartCreateSession = () => {
     if (!selectedCourse) return;
-    setSessionName(`Lecture: ${selectedCourse.name}`);
+    setSessionName(`Lecture: ${selectedCourse.courseName}`);
     setSessionDate(new Date().toISOString().split('T')[0]);
     setSessionDesc('');
     setStep(LecturerStep.CREATE_SESSION);
@@ -264,13 +337,18 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
     e.preventDefault();
     if (!selectedCourse) return;
 
-    const newSessionId = `${selectedCourse.id}-${Date.now().toString(36)}`;
+    const newSessionId = `${selectedCourse.courseCode || selectedCourse.id}-${Date.now().toString(36)}`;
     setActiveSessionId(newSessionId);
 
     try {
       await createSession({
         session_id: newSessionId,
         course_id: selectedCourse.id,
+        course_code: selectedCourse.courseCode,
+        course_name: selectedCourse.courseName,
+        semester_id: selectedCourse.semesterId,
+        lecturer_id: selectedCourse.lecturerId,
+        lecturer_name: selectedCourse.lecturerName,
         name: sessionName,
         description: sessionDesc,
         date: sessionDate,
@@ -327,7 +405,14 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
         activeSessionIdRef.current,
         result.studentId,
         result.studentName,
-        `BIO-${Date.now()}`
+        `BIO-${Date.now()}`,
+        null,
+        {
+          courseId: selectedCourseRef.current?.id,
+          courseCode: selectedCourseRef.current?.courseCode,
+          courseName: selectedCourseRef.current?.courseName,
+          semesterId: selectedCourseRef.current?.semesterId,
+        }
       );
 
       const record: AttendanceRecord = {
@@ -477,7 +562,19 @@ const LecturerScanner: React.FC<LecturerScannerProps> = ({ onBack }) => {
       processingStudentIdsRef.current.add(payload.studentId);
       lastScanTimeRef.current = now;
 
-      await saveAttendance(activeSessionIdRef.current, payload.studentId, payload.studentName, payload.nonce);
+      await saveAttendance(
+        activeSessionIdRef.current,
+        payload.studentId,
+        payload.studentName,
+        payload.nonce,
+        payload.studentUid || null,
+        {
+          courseId: payload.courseId || selectedCourseRef.current?.id,
+          courseCode: payload.courseCode || selectedCourseRef.current?.courseCode,
+          courseName: payload.courseName || selectedCourseRef.current?.courseName,
+          semesterId: payload.semesterId || selectedCourseRef.current?.semesterId,
+        }
+      );
       setAttendanceRecords(prev => [{ studentId: payload.studentId, studentName: payload.studentName, timestamp: new Date().toISOString() }, ...prev]);
       scannedNoncesRef.current.add(payload.nonce);
       processingNoncesRef.current.delete(payload.nonce);
@@ -631,7 +728,7 @@ if (step === LecturerStep.SELECT) {
       <div className="flex flex-col min-h-[100dvh] p-6 relative overflow-hidden bg-dark-bg">
         <div className="flex items-center gap-4 mb-8 pt-2 z-10">
           <button onClick={handleInternalBack} className="p-3 rounded-full glass-button text-slate-300"><ArrowLeft className="w-5 h-5" /></button>
-          <div className="flex-1"><h2 className="text-2xl font-bold text-white leading-none">{selectedCourse?.name}</h2><span className="text-sm text-brand-400 font-medium">{selectedCourse?.id}</span></div>
+          <div className="flex-1"><h2 className="text-2xl font-bold text-white leading-none">{selectedCourse?.courseName}</h2><span className="text-sm text-brand-400 font-medium">{selectedCourse?.courseCode || selectedCourse?.id}</span></div>
           <button onClick={handleLogout} className="p-3 rounded-full glass-button text-red-400 hover:text-red-300"><LogOut className="w-5 h-5" /></button>
         </div>
 

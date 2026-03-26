@@ -1,152 +1,454 @@
 import React, { useState } from 'react';
-import StudentQRGenerator from './components/StudentQRGenerator';
-import StudentRegistration from './components/StudentRegistration';
-import LecturerScanner from './components/LecturerScanner';
-import { ShieldCheck, QrCode, ArrowRight, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  ArrowRight,
+  BookUser,
+  CalendarDays,
+  GraduationCap,
+  ShieldCheck,
+} from 'lucide-react';
+import StudentRegistration from './components/StudentRegistration';
+import StudentQRGenerator from './components/StudentQRGenerator';
+import LecturerScanner from './components/LecturerScanner';
+import AdminDashboard from './components/Admin/AdminDashboard';
+import AdminLogin from './components/Admin/AdminLogin';
+import LecturerDashboard from './components/Lecturer/LecturerDashboard';
+import CourseCreation from './components/Lecturer/CourseCreation';
+import LecturerRegistration from './components/Lecturer/LecturerRegistration';
+import MyCourses from './components/Lecturer/MyCourses';
+import AttendanceHistory from './components/Student/AttendanceHistory';
+import CourseEnrollment from './components/Student/CourseEnrollment';
+import StudentDashboard from './components/Student/StudentDashboard';
+import type { Course } from './types/course';
+import type { AdminProfile, LecturerProfile, StudentProfile } from './types/user';
 
 enum View {
   LANDING = 'LANDING',
-  LECTURER = 'LECTURER',
-  STUDENT = 'STUDENT',
-  REGISTRATION = 'REGISTRATION'
+  STUDENT_REGISTRATION = 'STUDENT_REGISTRATION',
+  STUDENT_DASHBOARD = 'STUDENT_DASHBOARD',
+  STUDENT_ENROLLMENT = 'STUDENT_ENROLLMENT',
+  STUDENT_HISTORY = 'STUDENT_HISTORY',
+  STUDENT_QR = 'STUDENT_QR',
+  LECTURER_REGISTRATION = 'LECTURER_REGISTRATION',
+  LECTURER_DASHBOARD = 'LECTURER_DASHBOARD',
+  LECTURER_FINGERPRINT_ENROLLMENT = 'LECTURER_FINGERPRINT_ENROLLMENT',
+  LECTURER_CREATE_COURSE = 'LECTURER_CREATE_COURSE',
+  LECTURER_MY_COURSES = 'LECTURER_MY_COURSES',
+  LECTURER_SCANNER = 'LECTURER_SCANNER',
+  ADMIN_LOGIN = 'ADMIN_LOGIN',
+  ADMIN_DASHBOARD = 'ADMIN_DASHBOARD',
 }
 
 const App: React.FC = () => {
+  // Semester-aware app shell: new dashboards route into the preserved QR and scanner flows.
   const [currentView, setCurrentView] = useState<View>(View.LANDING);
+  const [studentSession, setStudentSession] = useState<StudentProfile | null>(null);
+  const [lecturerSession, setLecturerSession] = useState<LecturerProfile | null>(null);
+  const [adminSession, setAdminSession] = useState<AdminProfile | null>(null);
+  const [selectedStudentCourse, setSelectedStudentCourse] = useState<Course | null>(null);
+  const [selectedLecturerCourse, setSelectedLecturerCourse] = useState<Course | null>(null);
 
-  const goBack = () => setCurrentView(View.LANDING);
+  const goHome = () => setCurrentView(View.LANDING);
 
-  const renderContent = () => {
-    switch (currentView) {
-      case View.LECTURER:
-        return <LecturerScanner onBack={goBack} />;
-      case View.STUDENT:
-        return <StudentQRGenerator onBack={goBack} />;
-      // Render the registration screen as a dedicated full-screen view
-      case View.REGISTRATION:
-        return (
-          <StudentRegistration
-            onBack={goBack}
-            onRegistrationSuccess={() => {
-              setCurrentView(View.STUDENT);
-            }}
-          />
-        );
-      default:
-        return (
-          <div className="min-h-[100dvh] relative flex flex-col items-center justify-center p-6 overflow-hidden">
-            
-            {/* Animated Background Blobs */}
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
-            <div className="absolute top-0 -right-4 w-72 h-72 bg-accent-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob [animation-delay:2s]" />
-            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob [animation-delay:4s]" />
+  const renderLanding = () => (
+    <div className="min-h-[100dvh] relative flex flex-col items-center justify-center p-6 overflow-hidden">
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-accent-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob [animation-delay:2s]" />
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob [animation-delay:4s]" />
 
-            <div className="z-10 w-full max-w-md flex flex-col items-center">
-              
-              {/* Header */}
-              <div className="mb-10 text-center relative">
-                <motion.div 
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", bounce: 0.5 }}
-                  className="inline-flex items-center justify-center p-4 bg-gradient-to-tr from-brand-500 to-accent-500 rounded-2xl mb-6 shadow-lg shadow-brand-500/30"
-                >
-                  <ShieldCheck className="w-10 h-10 text-white" />
-                </motion.div>
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <h1 className="text-4xl font-extrabold tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                    Omniattend
-                  </h1>
-                  <p className="text-slate-400 font-medium text-lg">Class attendance, simplified.</p>
-                </motion.div>
-              </div>
+      <div className="z-10 w-full max-w-5xl">
+        <div className="text-center mb-12">
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', bounce: 0.5 }}
+            className="inline-flex items-center justify-center p-4 bg-gradient-to-tr from-brand-500 to-accent-500 rounded-2xl mb-6 shadow-lg shadow-brand-500/30"
+          >
+            <ShieldCheck className="w-10 h-10 text-white" />
+          </motion.div>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+            Omniattend
+          </h1>
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+            Class attendance, Simplified.
+          </p>
+        </div>
 
-              {/* Actions */}
-              <div className="w-full space-y-4">
-                <motion.button 
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  onClick={() => setCurrentView(View.LECTURER)}
-                  className="w-full glass-panel hover:bg-white/5 p-1 rounded-3xl transition-all duration-300 group relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-5">
-                      <div className="p-3.5 bg-brand-500/20 rounded-2xl text-brand-400 group-hover:text-brand-300 group-hover:scale-110 transition-all duration-300">
-                        <Camera className="w-7 h-7" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="font-bold text-xl text-white">Lecturer</h3>
-                        <p className="text-sm text-slate-400 font-medium">Scan student QR codes</p>
-                      </div>
-                    </div>
-                    <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-slate-500 group-hover:text-white group-hover:border-brand-500/50 transition-all">
-                      <ArrowRight className="w-5 h-5" />
-                    </div>
-                  </div>
-                </motion.button>
+  <div className="max-w-lg mx-auto space-y-6">
 
-                <motion.button 
-                  initial={{ x: 20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  onClick={() => setCurrentView(View.STUDENT)}
-                  className="w-full glass-panel hover:bg-white/5 p-1 rounded-3xl transition-all duration-300 group relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-accent-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-5">
-                      <div className="p-3.5 bg-accent-500/20 rounded-2xl text-accent-400 group-hover:text-accent-300 group-hover:scale-110 transition-all duration-300">
-                        <QrCode className="w-7 h-7" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="font-bold text-xl text-white">Student</h3>
-                        <p className="text-sm text-slate-400 font-medium">Generate your QR code</p>
-                      </div>
-                    </div>
-                    <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-slate-500 group-hover:text-white group-hover:border-accent-500/50 transition-all">
-                      <ArrowRight className="w-5 h-5" />
-                    </div>
-                  </div>
-                </motion.button>
-              </div>
-              {/* Registration link: navigates to the dedicated registration view */}
-              <div className="mt-4">
-                <button
-                  onClick={() => setCurrentView(View.REGISTRATION)}
-                  className="text-sm text-accent-400 hover:text-accent-300 underline"
-                >
-                  <strong>Register as a student</strong>
-                </button>
-              </div>
-              <motion.footer 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="mt-12 text-center"
-              >
-                <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-500 font-medium backdrop-blur-sm">
-                  Powered by Secure QR Technology
-                </div>
-              </motion.footer>
+  {/* Student */}
+  <button
+    onClick={() => setCurrentView(View.STUDENT_DASHBOARD)}
+    className="glass-panel w-full flex items-center justify-between p-6 rounded-3xl transition-all duration-300 hover:bg-white/5 text-left"
+  >
+    <div className="flex items-center gap-5">
+      <div className="w-14 h-14 rounded-2xl bg-accent-500/20 text-accent-300 flex items-center justify-center">
+        <BookUser className="w-7 h-7" />
+      </div>
 
-            </div>
-          </div>
-        );
-    }
-  };
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-1">Student</h2>
+        <p className="text-slate-400 text-sm">
+          Enroll in semester courses, generate QR codes.
+        </p>
+      </div>
+    </div>
 
-  return (
-    <div className="bg-dark-bg min-h-[100dvh] font-sans">
-      {renderContent()}
+    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+      <ArrowRight className="w-4 h-4 text-white" />
+    </div>
+  </button>
+
+  {/* Lecturer */}
+  <button
+    onClick={() => setCurrentView(View.LECTURER_DASHBOARD)}
+    className="glass-panel w-full flex items-center justify-between p-6 rounded-3xl transition-all duration-300 hover:bg-white/5 text-left"
+  >
+    <div className="flex items-center gap-5">
+      <div className="w-14 h-14 rounded-2xl bg-brand-500/20 text-brand-300 flex items-center justify-center">
+        <GraduationCap className="w-7 h-7" />
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-1">Lecturer</h2>
+        <p className="text-slate-400 text-sm">
+          Create semester courses
+        </p>
+      </div>
+    </div>
+
+    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+      <ArrowRight className="w-4 h-4 text-white" />
+    </div>
+  </button>
+
+  {/* Admin */}
+  <button
+    onClick={() => setCurrentView(View.ADMIN_LOGIN)}
+    className="glass-panel w-full flex items-center justify-between p-6 rounded-3xl transition-all duration-300 hover:bg-white/5 text-left"
+  >
+    <div className="flex items-center gap-5">
+      <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
+        <CalendarDays className="w-7 h-7" />
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-1">Admin</h2>
+        <p className="text-slate-400 text-sm">
+          Create or end semesters, inspect system-wide stats.
+        </p>
+      </div>
+    </div>
+
+    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
+      <ArrowRight className="w-4 h-4 text-white" />
+    </div>
+  </button>
+
+</div>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm">
+          <button
+            onClick={() => setCurrentView(View.STUDENT_REGISTRATION)}
+            className="font-bold text-pink-500 hover:text-pink-600"
+           // className="text-accent-300 hover:text-accent-200 underline"
+          >
+           Register as a student
+          </button>
+          <button
+            onClick={() => setCurrentView(View.LECTURER_REGISTRATION)}
+            className="font-bold text-purple-500 hover:text-pink-600"
+            //className="text-brand-300 hover:text-brand-200 underline"
+          >
+            Register as a lecturer
+          </button>
+        </div>
+      </div>
     </div>
   );
+
+  switch (currentView) {
+    case View.STUDENT_REGISTRATION:
+      return (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <StudentRegistration
+            onBack={goHome}
+            onRegistrationSuccess={() => setCurrentView(View.STUDENT_DASHBOARD)}
+          />
+        </div>
+      );
+
+    case View.STUDENT_DASHBOARD:
+      return (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <StudentDashboard
+            student={studentSession}
+            onStudentChange={setStudentSession}
+            onBack={goHome}
+            onOpenEnrollment={() => setCurrentView(View.STUDENT_ENROLLMENT)}
+            onOpenHistory={() => setCurrentView(View.STUDENT_HISTORY)}
+            onOpenQR={(course) => {
+              setSelectedStudentCourse(course);
+              setCurrentView(View.STUDENT_QR);
+            }}
+          />
+        </div>
+      );
+
+    case View.STUDENT_ENROLLMENT:
+      return studentSession ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <CourseEnrollment
+            student={studentSession}
+            onStudentChange={setStudentSession}
+            onBack={() => setCurrentView(View.STUDENT_DASHBOARD)}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <StudentDashboard
+            student={studentSession}
+            onStudentChange={setStudentSession}
+            onBack={goHome}
+            onOpenEnrollment={() => setCurrentView(View.STUDENT_ENROLLMENT)}
+            onOpenHistory={() => setCurrentView(View.STUDENT_HISTORY)}
+            onOpenQR={(course) => {
+              setSelectedStudentCourse(course);
+              setCurrentView(View.STUDENT_QR);
+            }}
+          />
+        </div>
+      );
+
+    case View.STUDENT_HISTORY:
+      return studentSession ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <AttendanceHistory
+            student={studentSession}
+            onBack={() => setCurrentView(View.STUDENT_DASHBOARD)}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <StudentDashboard
+            student={studentSession}
+            onStudentChange={setStudentSession}
+            onBack={goHome}
+            onOpenEnrollment={() => setCurrentView(View.STUDENT_ENROLLMENT)}
+            onOpenHistory={() => setCurrentView(View.STUDENT_HISTORY)}
+            onOpenQR={(course) => {
+              setSelectedStudentCourse(course);
+              setCurrentView(View.STUDENT_QR);
+            }}
+          />
+        </div>
+      );
+
+    case View.STUDENT_QR:
+      return studentSession && selectedStudentCourse ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <StudentQRGenerator
+            student={studentSession}
+            course={selectedStudentCourse}
+            onBack={() => setCurrentView(View.STUDENT_DASHBOARD)}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <StudentDashboard
+            student={studentSession}
+            onStudentChange={setStudentSession}
+            onBack={goHome}
+            onOpenEnrollment={() => setCurrentView(View.STUDENT_ENROLLMENT)}
+            onOpenHistory={() => setCurrentView(View.STUDENT_HISTORY)}
+            onOpenQR={(course) => {
+              setSelectedStudentCourse(course);
+              setCurrentView(View.STUDENT_QR);
+            }}
+          />
+        </div>
+      );
+
+    case View.LECTURER_REGISTRATION:
+      return (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerRegistration
+            onBack={goHome}
+            onRegistrationSuccess={(lecturer) => {
+              setLecturerSession(lecturer);
+              setCurrentView(View.LECTURER_DASHBOARD);
+            }}
+          />
+        </div>
+      );
+
+    case View.LECTURER_DASHBOARD:
+      return (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerDashboard
+            lecturer={lecturerSession}
+            onLecturerChange={setLecturerSession}
+            onBack={goHome}
+            onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
+            onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
+          />
+        </div>
+      );
+
+    case View.LECTURER_FINGERPRINT_ENROLLMENT:
+      return lecturerSession ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerScanner
+            onBack={() => setCurrentView(View.LECTURER_DASHBOARD)}
+            initialLecturer={lecturerSession}
+            initialMode="enroll"
+            onLecturerLogout={() => {
+              setLecturerSession(null);
+              setSelectedLecturerCourse(null);
+              setCurrentView(View.LECTURER_DASHBOARD);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerDashboard
+            lecturer={lecturerSession}
+            onLecturerChange={setLecturerSession}
+            onBack={goHome}
+            onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
+            onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
+          />
+        </div>
+      );
+
+    case View.LECTURER_CREATE_COURSE:
+      return lecturerSession ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <CourseCreation
+            lecturer={lecturerSession}
+            onLecturerChange={setLecturerSession}
+            onBack={() => setCurrentView(View.LECTURER_DASHBOARD)}
+            onCreated={() => setCurrentView(View.LECTURER_MY_COURSES)}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerDashboard
+            lecturer={lecturerSession}
+            onLecturerChange={setLecturerSession}
+            onBack={goHome}
+            onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
+            onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
+          />
+        </div>
+      );
+
+    case View.LECTURER_MY_COURSES:
+      return lecturerSession ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <MyCourses
+            lecturer={lecturerSession}
+            onBack={() => setCurrentView(View.LECTURER_DASHBOARD)}
+            onOpenCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenScanner={(course) => {
+              setSelectedLecturerCourse(course);
+              setCurrentView(View.LECTURER_SCANNER);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerDashboard
+            lecturer={lecturerSession}
+            onLecturerChange={setLecturerSession}
+            onBack={goHome}
+            onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
+            onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
+          />
+        </div>
+      );
+
+    case View.LECTURER_SCANNER:
+      return lecturerSession && selectedLecturerCourse ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerScanner
+            onBack={() => setCurrentView(View.LECTURER_MY_COURSES)}
+            initialLecturer={lecturerSession}
+            initialCourse={selectedLecturerCourse}
+            onLecturerLogout={() => {
+              setLecturerSession(null);
+              setSelectedLecturerCourse(null);
+              setCurrentView(View.LECTURER_DASHBOARD);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <LecturerDashboard
+            lecturer={lecturerSession}
+            onLecturerChange={setLecturerSession}
+            onBack={goHome}
+            onCreateCourse={() => setCurrentView(View.LECTURER_CREATE_COURSE)}
+            onOpenFingerprintEnrollment={() =>
+              setCurrentView(View.LECTURER_FINGERPRINT_ENROLLMENT)
+            }
+            onOpenMyCourses={() => setCurrentView(View.LECTURER_MY_COURSES)}
+          />
+        </div>
+      );
+
+    case View.ADMIN_LOGIN:
+      return (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <AdminLogin
+            onBack={goHome}
+            onLogin={(admin) => {
+              setAdminSession(admin);
+              setCurrentView(View.ADMIN_DASHBOARD);
+            }}
+          />
+        </div>
+      );
+
+    case View.ADMIN_DASHBOARD:
+      return adminSession ? (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <AdminDashboard
+            admin={adminSession}
+            onBack={goHome}
+            onLogout={() => {
+              setAdminSession(null);
+              setCurrentView(View.ADMIN_LOGIN);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="bg-dark-bg min-h-[100dvh] font-sans">
+          <AdminLogin
+            onBack={goHome}
+            onLogin={(admin) => {
+              setAdminSession(admin);
+              setCurrentView(View.ADMIN_DASHBOARD);
+            }}
+          />
+        </div>
+      );
+
+    default:
+      return <div className="bg-dark-bg min-h-[100dvh] font-sans">{renderLanding()}</div>;
+  }
 };
 
 export default App;

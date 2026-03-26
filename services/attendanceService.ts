@@ -1,31 +1,43 @@
 import { db } from './firebaseClient';
-import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
-
-const auth = getAuth();
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import {
+  loginLecturer as loginLecturerAccount,
+  logoutLecturer as logoutLecturerAccount,
+} from './lecturerService';
 
 export const loginLecturer = async (email: string, password: string) => {
-  const result = await signInWithEmailAndPassword(auth, email, password);
-  return result.user;
+  return loginLecturerAccount(email, password);
 };
 
 export const logoutLecturer = async () => {
-  await signOut(auth);
+  await logoutLecturerAccount();
 };
 
-// Save attendance record
+interface AttendanceMetadata {
+  courseId?: string | null;
+  courseCode?: string | null;
+  courseName?: string | null;
+  semesterId?: string | null;
+}
+
+// Semester-aware attendance records keep course and semester metadata without breaking existing logs.
 export const saveAttendance = async (
   sessionId: string,
   studentId: string,
   studentName?: string,
   nonce?: string,
-  studentUid?: string | null
+  studentUid?: string | null,
+  metadata?: AttendanceMetadata
 ) => {
   return await addDoc(collection(db, 'attendance_logs'), {
     class_id: sessionId,
     student_id: studentId,
     student_uid: studentUid || null,
     student_name: studentName || null,
+    course_id: metadata?.courseId || null,
+    course_code: metadata?.courseCode || null,
+    course_name: metadata?.courseName || null,
+    semester_id: metadata?.semesterId || null,
     nonce: nonce || `AUTO-${Date.now()}`,
     timestamp: new Date().toISOString()
   });
@@ -88,6 +100,11 @@ export const getAttendanceForSession = async (sessionId: string) => {
 export const createSession = async (sessionData: {
   session_id: string;
   course_id: string;
+  course_code?: string;
+  course_name?: string;
+  semester_id?: string;
+  lecturer_id?: string;
+  lecturer_name?: string;
   name: string;
   description: string;
   date: string;
