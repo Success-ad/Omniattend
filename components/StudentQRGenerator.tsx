@@ -68,7 +68,7 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({
 
   useEffect(() => {
     generateQR();
-    const interval = setInterval(generateQR, 60000);
+    const interval = setInterval(generateQR, 30000); // Auto-refresh every 30 seconds
     return () => clearInterval(interval);
   }, [generateQR]);
 
@@ -143,7 +143,7 @@ const StudentQRGenerator: React.FC<StudentQRGeneratorProps> = ({
 
         <div className="mt-6 text-center">
           <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-400">
-            Auto-refreshes every 60 seconds for secure attendance scanning
+            Auto-refreshes every 30 seconds for secure attendance scanning
           </span>
         </div>
       </div>

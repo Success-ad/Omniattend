@@ -33,7 +33,7 @@ OmniAttend is a modern university attendance system that supports **three user r
    - Email
    - Password
    - Department
-   - Level (100–500)
+   - Level (100–600)
 3. **No courses are selected here** — enrollment happens later.
 
 ### Step 2: Login & Course Enrollment
@@ -49,7 +49,7 @@ OmniAttend is a modern university attendance system that supports **three user r
 1. Go to **"My Enrolled Courses"**
 2. Select the course you are attending today
 3. Click **"Generate QR Code"**
-4. Show the QR to your lecturer (refreshes automatically every 60 seconds for security)
+4. Show the QR to your lecturer (refreshes automatically every 30 seconds for security)
 
 ---
 
@@ -98,7 +98,7 @@ OmniAttend is a modern university attendance system that supports **three user r
 #### Option B: Fingerprint Mode
 - System switches to biometric mode
 - Students place finger on the **DigitalPersona U.are.U 4500** scanner
-- System compares against enrolled templates (threshold 80% similarity)
+- System compares against enrolled templates 
 - Logs attendance with `method: "fingerprint"`
 
 ---
@@ -137,7 +137,6 @@ OmniAttend is a modern university attendance system that supports **three user r
 | **Active Semester**  | Only **one** semester can be active at a time |
 | **Course Enrollment**| Students enroll themselves after registration |
 | **Sessions**         | Created by lecturers per lecture/date |
-| **Attendance Logs**  | Stored with method (`qr` or `fingerprint`) |
 | **History**          | Automatically archived when semester ends |
 
 ---
